@@ -1,0 +1,40 @@
+import { REST, Routes, SlashCommandBuilder, ChannelType } from 'discord.js';
+import config from './config/index.js';
+
+const commands = [
+    new SlashCommandBuilder()
+        .setName('aktiflik')
+        .setDescription('Aktiflik buton mesajı gönderir'),
+
+    new SlashCommandBuilder()
+        .setName('ingame')
+        .setDescription('Ingame buton mesajı gönderir'),
+
+    new SlashCommandBuilder()
+        .setName('maddex')
+        .setDescription('Maddex buton mesajı gönderir (maksimum 20 kişi)'),
+
+    new SlashCommandBuilder()
+        .setName('toplusescekme')
+        .setDescription('Ses kanalındaki herkesi seçilen kanala taşır')
+        .addChannelOption(option =>
+            option.setName('kanal')
+                .setDescription('Taşınacak ses kanalı')
+                .addChannelTypes(ChannelType.GuildVoice)
+                .setRequired(true))
+];
+
+const rest = new REST({ version: '10' }).setToken(config.token);
+
+try {
+    console.log('Komutlar kaydediliyor...');
+
+    await rest.put(
+        Routes.applicationGuildCommands(config.clientId, config.guildId),
+        { body: commands.map(cmd => cmd.toJSON()) }
+    );
+
+    console.log('Komutlar başarıyla kaydedildi!');
+} catch (error) {
+    console.error('Komut kaydedilirken hata:', error);
+}

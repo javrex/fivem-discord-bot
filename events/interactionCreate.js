@@ -1,0 +1,61 @@
+import * as aktiflikCommand from '../commands/aktiflik.js';
+import * as ingameCommand from '../commands/ingame.js';
+import * as maddexCommand from '../commands/maddex.js';
+import * as toplusescekmeCommand from '../commands/toplusescekme.js';
+
+import handleAktiflikButton from '../buttons/aktiflik.js';
+import handleIngameButton from '../buttons/ingame.js';
+import handleMaddexButton from '../buttons/maddex.js';
+import config from '../config/index.js';
+
+// Komut isimleriyle işleyicileri eşleştir
+const commandMap = {
+    'aktiflik': aktiflikCommand,
+    'ingame': ingameCommand,
+    'maddex': maddexCommand,
+    'toplusescekme': toplusescekmeCommand
+};
+
+// Gelen tüm etkileşimleri yönetir
+export default async function(interaction, client) {
+    try {
+        if (interaction.isChatInputCommand()) {
+            // Yetki kontrolü: kullanıcı izin verilen rollerden birine sahip mi?
+            const hasPermission = interaction.member?.roles.cache.some(
+                role => config.allowedRoles.includes(role.id)
+            );
+
+            if (!hasPermission) {
+                return interaction.reply({
+                    content: 'Bu komutu kullanma yetkiniz bulunmuyor.',
+                    ephemeral: true
+                });
+            }
+
+            const command = commandMap[interaction.commandName];
+            if (command) {
+                await command.execute(interaction, client);
+            }
+        } else if (interaction.isButton()) {
+            const customId = interaction.customId;
+
+            // Buton customId'sine göre ilgili işleyiciye yönlendir
+            if (customId.startsWith('aktiflik_')) {
+                await handleAktiflikButton(interaction, client);
+            } else if (customId.startsWith('ingame_')) {
+                await handleIngameButton(interaction, client);
+            } else if (customId.startsWith('maddex_')) {
+                await handleMaddexButton(interaction, client);
+            }
+        }
+    } catch (error) {
+        console.error('İşlem sırasında hata:', error);
+
+        if (interaction.isRepliable()) {
+            await interaction.reply({
+                content: 'Bir hata oluştu.',
+                ephemeral: true
+            }).catch(() => {});
+        }
+    }
+}

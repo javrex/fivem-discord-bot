@@ -1,0 +1,9 @@
+{
+    "token": "BOT_TOKENINIZ",
+    "clientId": "BOT_CLIENT_ID",
+    "guildId": "SUNUCU_ID",
+    "allowedRoles": [
+        "YONETICI_ROLE_ID_1",
+        "YONETICI_ROLE_ID_2"
+    ]
+}
