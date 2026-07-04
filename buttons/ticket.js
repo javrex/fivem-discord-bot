@@ -43,9 +43,12 @@ async function createTicket(interaction) {
 
         const embed = new EmbedBuilder()
             .setColor(0x3498db)
-            .setTitle('Ticket')
-            .setDescription('Yetkililer en kısa sürede size yardımcı olacaktır.')
-            .addFields({ name: 'Kullanıcı', value: `${interaction.user}` })
+            .setTitle('Hoş Geldin')
+            .setDescription('Yetkililer en kısa sürede size yardımcı olacaktır. Lütfen sorununuzu detaylıca anlatın.')
+            .addFields(
+                { name: 'Kullanıcı', value: `${interaction.user}`, inline: true },
+                { name: 'Kullanıcı ID', value: interaction.user.id, inline: true }
+            )
             .setFooter({ text: interaction.guild.name })
             .setTimestamp();
 
@@ -57,7 +60,14 @@ async function createTicket(interaction) {
                 .setEmoji('🔒')
         );
 
-        await channel.send({ content: `${interaction.user}`, embeds: [embed], components: [closeButton] });
+        const roleMentions = config.allowedRoles.map(id => `<@&${id}>`).join(' ');
+
+        await channel.send({
+            content: `${interaction.user} ${roleMentions}`,
+            embeds: [embed],
+            components: [closeButton]
+        });
+
         await interaction.editReply({ content: `Ticketınız oluşturuldu: ${channel}` });
     } catch (error) {
         console.error('Ticket oluşturma hatası:', error);
@@ -84,4 +94,3 @@ async function closeTicket(interaction) {
         }
     }, 5000);
 }
-

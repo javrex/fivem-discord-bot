@@ -16,7 +16,8 @@ const config = {
         : (fileConfig.allowedRoles || []),
     voiceChannelId: process.env.VOICE_CHANNEL_ID || fileConfig.voiceChannelId,
     ticketPanelChannelId: process.env.TICKET_PANEL_CHANNEL_ID || fileConfig.ticketPanelChannelId,
-    ticketCategoryId: process.env.TICKET_CATEGORY_ID || fileConfig.ticketCategoryId
+    ticketCategoryId: process.env.TICKET_CATEGORY_ID || fileConfig.ticketCategoryId,
+    ticketImageUrl: process.env.TICKET_IMAGE_URL || fileConfig.ticketImageUrl
 };
 
 export default config;

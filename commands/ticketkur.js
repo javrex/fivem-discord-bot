@@ -9,12 +9,27 @@ export async function execute(interaction) {
         return interaction.editReply({ content: 'Ticket panel kanalı bulunamadı.' });
     }
 
+    const roleMentions = config.allowedRoles.map(id => `<@&${id}>`).join(' ');
+
     const embed = new EmbedBuilder()
         .setColor(0x3498db)
         .setTitle('Ticket Sistemi')
-        .setDescription('Destek almak için aşağıdaki butonu kullanın.')
+        .setDescription([
+            'Destek almak için aşağıdaki butonu kullanın.',
+            '',
+            '**Ticket açmadan önce:**',
+            '• Lütfen sorununuzu ticket içinde detaylıca anlatın.',
+            '• Gereksiz ticket açmayın.',
+            '• Zaten açık bir ticketınız varsa yenisini açmayın.',
+            '',
+            `**Yetkililer:** ${roleMentions}`
+        ].join('\n'))
         .setFooter({ text: interaction.guild.name })
         .setTimestamp();
+
+    if (config.ticketImageUrl) {
+        embed.setImage(config.ticketImageUrl);
+    }
 
     const button = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
