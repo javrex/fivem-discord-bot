@@ -13,7 +13,8 @@ const config = {
     guildId: process.env.GUILD_ID || fileConfig.guildId,
     allowedRoles: process.env.ALLOWED_ROLES
         ? process.env.ALLOWED_ROLES.split(',').map(r => r.trim())
-        : (fileConfig.allowedRoles || [])
+        : (fileConfig.allowedRoles || []),
+    voiceChannelId: process.env.VOICE_CHANNEL_ID || fileConfig.voiceChannelId
 };
 
 export default config;

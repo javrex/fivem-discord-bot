@@ -1,7 +1,12 @@
 import { ActivityType } from 'discord.js';
+import config from '../config/index.js';
+import { joinVoice } from '../voice.js';
 
-// Bot hazır olduğunda çalışır
 export default function(client) {
     console.log(`${client.user.tag} olarak giriş yapıldı!`);
     client.user.setActivity('FiveM Yönetim', { type: ActivityType.Watching });
+
+    if (config.voiceChannelId) {
+        joinVoice(client, config.voiceChannelId);
+    }
 }
