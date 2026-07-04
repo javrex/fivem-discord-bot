@@ -2,9 +2,11 @@ import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'disc
 import config from '../config/index.js';
 
 export async function execute(interaction) {
+    await interaction.deferReply({ ephemeral: true });
+
     const channel = interaction.guild.channels.cache.get(config.ticketPanelChannelId);
     if (!channel) {
-        return interaction.reply({ content: 'Ticket panel kanalı bulunamadı.', ephemeral: true });
+        return interaction.editReply({ content: 'Ticket panel kanalı bulunamadı.' });
     }
 
     const embed = new EmbedBuilder()
@@ -23,5 +25,5 @@ export async function execute(interaction) {
     );
 
     await channel.send({ embeds: [embed], components: [button] });
-    await interaction.reply({ content: 'Ticket paneli gönderildi.', ephemeral: true });
+    await interaction.editReply({ content: 'Ticket paneli gönderildi.' });
 }
