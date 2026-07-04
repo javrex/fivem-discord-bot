@@ -4,6 +4,7 @@ import * as maddexCommand from '../commands/maddex.js';
 import * as toplusescekmeCommand from '../commands/toplusescekme.js';
 import * as aktiflikbitirCommand from '../commands/aktiflikbitir.js';
 import * as komutlarCommand from '../commands/komutlar.js';
+import * as ticketkurCommand from '../commands/ticketkur.js';
 
 import handleAktiflikButton from '../buttons/aktiflik.js';
 import handleIngameButton from '../buttons/ingame.js';
@@ -17,7 +18,8 @@ const commandMap = {
     'maddex': maddexCommand,
     'toplusescekme': toplusescekmeCommand,
     'aktiflikbitir': aktiflikbitirCommand,
-    'komutlar': komutlarCommand
+    'komutlar': komutlarCommand,
+    'ticketkur': ticketkurCommand
 };
 
 // Gelen tüm etkileşimleri yönetir
@@ -51,6 +53,9 @@ export default async function(interaction, client) {
                 await handleIngameButton(interaction, client);
             } else if (customId.startsWith('maddex_')) {
                 await handleMaddexButton(interaction, client);
+            } else if (customId.startsWith('ticket_')) {
+                const handleTicketButton = (await import('../buttons/ticket.js')).default;
+                await handleTicketButton(interaction, client);
             }
         }
     } catch (error) {

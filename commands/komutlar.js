@@ -10,7 +10,9 @@ export async function execute(interaction) {
             { name: '/aktiflikbitir', value: 'Aktiflik mesajını sonlandırır ve butonları kaldırır.' },
             { name: '/ingame', value: 'Ingame buton mesajı gönderir. Katıl, Yedek ve Ayrıl butonları bulunur.' },
             { name: '/maddex', value: 'Maddex buton mesajı gönderir. Katılanlar 20 kişiyle sınırlıdır, taşanlar yedek listesine eklenir.' },
-            { name: '/toplusescekme', value: 'Belirtilen ses kanalına sunucudaki tüm kullanıcıları taşır.' }
+            { name: '/toplusescekme', value: 'Belirtilen ses kanalına sunucudaki tüm kullanıcıları taşır.' },
+            { name: '/ticketkur', value: 'Ticket panel mesajını kanala gönderir.' },
+            { name: '/komutlar', value: 'Tüm komutları listeler.' }
         )
         .setFooter({ text: interaction.guild.name })
         .setTimestamp();

@@ -29,7 +29,11 @@ const commands = [
 
     new SlashCommandBuilder()
         .setName('komutlar')
-        .setDescription('Tüm komutları listeler')
+        .setDescription('Tüm komutları listeler'),
+
+    new SlashCommandBuilder()
+        .setName('ticketkur')
+        .setDescription('Ticket panel mesajını gönderir')
 ];
 
 const rest = new REST({ version: '10' }).setToken(config.token);
