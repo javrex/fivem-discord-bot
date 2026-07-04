@@ -21,7 +21,15 @@ const commands = [
             option.setName('kanal')
                 .setDescription('Taşınacak ses kanalı')
                 .addChannelTypes(ChannelType.GuildVoice)
-                .setRequired(true))
+                .setRequired(true)),
+
+    new SlashCommandBuilder()
+        .setName('aktiflikbitir')
+        .setDescription('Aktiflik mesajını sonlandırır'),
+
+    new SlashCommandBuilder()
+        .setName('komutlar')
+        .setDescription('Tüm komutları listeler')
 ];
 
 const rest = new REST({ version: '10' }).setToken(config.token);

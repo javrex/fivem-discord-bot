@@ -57,5 +57,5 @@ export async function execute(interaction, client) {
 
     const message = await interaction.reply({ embeds: [embed], components, fetchReply: true });
 
-    client.activePolls.set(message.id, { type: 'maddex', ...data });
+    client.activePolls.set(message.id, { type: 'maddex', channelId: interaction.channel.id, ...data });
 }

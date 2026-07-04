@@ -42,5 +42,5 @@ export async function execute(interaction, client) {
     const message = await interaction.reply({ embeds: [embed], components, fetchReply: true });
 
     // Buton etkileşimlerinde kullanılmak üzere veriyi kaydet
-    client.activePolls.set(message.id, { type: 'aktiflik', ...data });
+    client.activePolls.set(message.id, { type: 'aktiflik', channelId: interaction.channel.id, ...data });
 }

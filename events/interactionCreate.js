@@ -2,6 +2,8 @@ import * as aktiflikCommand from '../commands/aktiflik.js';
 import * as ingameCommand from '../commands/ingame.js';
 import * as maddexCommand from '../commands/maddex.js';
 import * as toplusescekmeCommand from '../commands/toplusescekme.js';
+import * as aktiflikbitirCommand from '../commands/aktiflikbitir.js';
+import * as komutlarCommand from '../commands/komutlar.js';
 
 import handleAktiflikButton from '../buttons/aktiflik.js';
 import handleIngameButton from '../buttons/ingame.js';
@@ -13,23 +15,26 @@ const commandMap = {
     'aktiflik': aktiflikCommand,
     'ingame': ingameCommand,
     'maddex': maddexCommand,
-    'toplusescekme': toplusescekmeCommand
+    'toplusescekme': toplusescekmeCommand,
+    'aktiflikbitir': aktiflikbitirCommand,
+    'komutlar': komutlarCommand
 };
 
 // Gelen tüm etkileşimleri yönetir
 export default async function(interaction, client) {
     try {
         if (interaction.isChatInputCommand()) {
-            // Yetki kontrolü: kullanıcı izin verilen rollerden birine sahip mi?
-            const hasPermission = interaction.member?.roles.cache.some(
-                role => config.allowedRoles.includes(role.id)
-            );
+            if (interaction.commandName !== 'komutlar') {
+                const hasPermission = interaction.member?.roles.cache.some(
+                    role => config.allowedRoles.includes(role.id)
+                );
 
-            if (!hasPermission) {
-                return interaction.reply({
-                    content: 'Bu komutu kullanma yetkiniz bulunmuyor.',
-                    ephemeral: true
-                });
+                if (!hasPermission) {
+                    return interaction.reply({
+                        content: 'Bu komutu kullanma yetkiniz bulunmuyor.',
+                        ephemeral: true
+                    });
+                }
             }
 
             const command = commandMap[interaction.commandName];
