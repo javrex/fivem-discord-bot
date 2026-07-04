@@ -61,11 +61,12 @@ export default async function(interaction, client) {
     } catch (error) {
         console.error('İşlem sırasında hata:', error);
 
-        if (interaction.isRepliable()) {
-            await interaction.reply({
-                content: 'Bir hata oluştu.',
-                ephemeral: true
-            }).catch(() => {});
-        }
+        try {
+            if (interaction.deferred || interaction.replied) {
+                await interaction.editReply({ content: 'Bir hata oluştu.' });
+            } else if (interaction.isRepliable()) {
+                await interaction.reply({ content: 'Bir hata oluştu.', ephemeral: true });
+            }
+        } catch {}
     }
 }
