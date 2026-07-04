@@ -26,6 +26,8 @@ export async function joinVoice(client, channelId) {
             selfMute: true
         });
 
+        console.log('Bağlantı oluşturuldu, durum:', currentConnection.state.status);
+
         currentConnection.on(VoiceConnectionStatus.Disconnected, async () => {
             try {
                 await Promise.race([
@@ -41,6 +43,10 @@ export async function joinVoice(client, channelId) {
 
         currentConnection.on(VoiceConnectionStatus.Ready, () => {
             console.log(`${channel.name} ses kanalına bağlanıldı.`);
+        });
+
+        currentConnection.on('error', (error) => {
+            console.error('Ses bağlantısı hatası:', error);
         });
 
         return currentConnection;

@@ -7,6 +7,9 @@ export default function(client) {
     client.user.setActivity('FiveM Yönetim', { type: ActivityType.Watching });
 
     if (config.voiceChannelId) {
+        console.log(`Ses kanalına bağlanılıyor: ${config.voiceChannelId}`);
         joinVoice(client, config.voiceChannelId);
+    } else {
+        console.log('VOICE_CHANNEL_ID bulunamadı, ses kanalına bağlanılmadı.');
     }
 }
