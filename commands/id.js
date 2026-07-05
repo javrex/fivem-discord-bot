@@ -31,11 +31,9 @@ export async function execute(interaction) {
         return interaction.editReply({ content: 'Sunucu bulunamadı.' });
     }
 
-    const { host, port } = (() => {
-        const parts = address.split(':');
-        return { host: parts[0], port: parts[1] || '30120' };
-    })();
-
+    const parts = address.split(':');
+    const host = parts[0];
+    const port = parts[1] || '30120';
     const displayName = serverChoice.charAt(0).toUpperCase() + serverChoice.slice(1).replace('_', ' ');
 
     try {
@@ -55,17 +53,23 @@ export async function execute(interaction) {
 
         if (!player) {
             return interaction.editReply({
-                content: `**${displayName}** sunucusunda **ID ${playerId}** ile bir oyuncu bulunamadı.`
+                content: `${displayName} sunucusunda **ID ${playerId}** ile eşleşen oyuncu bulunamadı.`
             });
         }
+
+        const discordId = (player.identifiers || []).find(i => i.startsWith('discord:'));
+        const steamId = (player.identifiers || []).find(i => i.startsWith('steam:'));
 
         const embed = new EmbedBuilder()
             .setColor(0x2ecc71)
             .setTitle('Oyuncu Bulundu')
+            .setDescription(`${displayName} sunucusunda **ID ${playerId}** sorgulandı`)
             .addFields(
                 { name: 'İsim', value: player.name || 'Bilinmiyor', inline: true },
                 { name: 'ID', value: String(player.id), inline: true },
-                { name: 'Ping', value: `${player.ping} ms`, inline: true },
+                { name: 'Ping', value: `${player.ping || '?'} ms`, inline: true },
+                { name: 'Discord', value: discordId ? `<@${discordId.replace('discord:', '')}>` : 'Bağlı değil', inline: true },
+                { name: 'Steam', value: steamId ? `\`${steamId}\`` : 'Bağlı değil', inline: true },
                 { name: 'Sunucu', value: displayName, inline: true }
             )
             .setFooter({ text: `${host}:${port}` })

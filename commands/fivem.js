@@ -105,16 +105,33 @@ export async function execute(interaction) {
             if (cfx) result = cfx;
         }
 
-        const playerCount = Array.isArray(result.players) ? result.players.length : (result.clients || 0);
-        const playerList = result.players.length > 0
-            ? result.players.slice(0, 30).map(p => `• ${p.name || 'İsimsiz'}`).join('\n')
-            : 'Henüz oyuncu yok.';
+        const players = Array.isArray(result.players) ? result.players : [];
+        const playerCount = players.length;
+        const maxClients = result.maxClients;
+
+        let playerList;
+        if (players.length === 0) {
+            playerList = 'Henüz oyuncu yok.';
+        } else {
+            const maxShow = 25;
+            const shown = players.slice(0, maxShow);
+            const lines = shown.map((p, i) => `\`${String(p.id).padEnd(4)}\` ${p.name || 'İsimsiz'} \`${p.ping || '?'}ms\``);
+            playerList = lines.join('\n');
+            if (players.length > maxShow) {
+                playerList += `\n… ve ${players.length - maxShow} kişi daha`;
+            }
+        }
+
+        const color = playerCount === 0 ? 0x95a5a6
+            : playerCount < maxClients / 2 ? 0x2ecc71
+            : playerCount < maxClients * 0.8 ? 0xf39c12
+            : 0xe74c3c;
 
         const embed = new EmbedBuilder()
-            .setColor(0x3498db)
+            .setColor(color)
             .setTitle(displayName)
-            .setDescription(`**Oyuncular:** ${playerCount}/${result.maxClients}`)
-            .addFields({ name: `Aktif Oyuncular (${playerCount})`, value: playerList })
+            .setDescription(`**${playerCount}** / **${maxClients}** oyuncu aktif`)
+            .addFields({ name: `Oyuncu Listesi (${playerCount})`, value: playerList })
             .setFooter({ text: `${host}:${port}` })
             .setTimestamp();
 
