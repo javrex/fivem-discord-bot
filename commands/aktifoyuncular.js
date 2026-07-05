@@ -88,16 +88,10 @@ function escapeMD(text) {
     return String(text).replace(/[_*~`|>]/g, '\\$&');
 }
 
-function makeProgressBar(current, max, length = 10) {
-    const maxNum = typeof max === 'number' && max > 0 ? max : 100;
-    const filled = Math.round((current / maxNum) * length);
+function makeBar(current, max, length = 8) {
+    const m = typeof max === 'number' && max > 0 ? max : 100;
+    const filled = Math.round((current / m) * length);
     return '🟩'.repeat(Math.min(filled, length)) + '⬜'.repeat(Math.max(length - filled, 0));
-}
-
-function chunkPlayers(players, size) {
-    const chunks = [];
-    for (let i = 0; i < players.length; i += size) chunks.push(players.slice(i, i + size));
-    return chunks;
 }
 
 export async function execute(interaction) {
@@ -125,39 +119,38 @@ export async function execute(interaction) {
         const playerCount = players.length;
         const maxVal = typeof result.maxClients === 'number' ? result.maxClients : parseInt(result.maxClients) || 0;
 
-        const bar = makeProgressBar(playerCount, maxVal || playerCount || 1);
+        const bar = makeBar(playerCount, maxVal || playerCount || 1);
+        const maxShow = 60;
+        const shown = players.slice(0, maxShow);
 
-        const color = playerCount === 0 ? 0x6c757d
+        const lines = shown.map(p => {
+            const name = escapeMD(p.name || 'İsimsiz');
+            return `\`#${String(p.id).padEnd(3)}\` ${name} — \`${p.ping || '?'}ms\``;
+        });
+
+        const color = playerCount === 0 ? 0x636e72
             : playerCount < (maxVal || 100) / 2 ? 0x00b894
             : playerCount < (maxVal || 100) * 0.8 ? 0xfdcb6e
-            : 0xe17055;
+            : 0xd63031;
+
+        let descLines = [`${bar}  **${playerCount} / ${result.maxClients}**`];
+        if (lines.length > 0) {
+            descLines.push('');
+            descLines = descLines.concat(lines);
+        }
+        if (playerCount > maxShow) {
+            descLines.push(`*+${playerCount - maxShow} oyuncu daha listelenemedi*`);
+        }
+        if (playerCount === 0) {
+            descLines.push('Sunucuda aktif oyuncu bulunmuyor.');
+        }
 
         const embed = new EmbedBuilder()
             .setColor(color)
             .setTitle(displayName)
-            .setDescription(`${bar}  **${playerCount}** / **${result.maxClients}**`)
+            .setDescription(descLines.join('\n'))
+            .setFooter({ text: `${host}:${port}` })
             .setTimestamp();
-
-        if (players.length === 0) {
-            embed.addFields({ name: 'Oyuncular', value: 'Sunucuda aktif oyuncu bulunmuyor.' });
-        } else {
-            const PER_PAGE = 25;
-            const chunks = chunkPlayers(players, PER_PAGE);
-
-            for (let i = 0; i < chunks.length; i++) {
-                const chunk = chunks[i];
-                const start = i * PER_PAGE + 1;
-                const end = i * PER_PAGE + chunk.length;
-                const label = chunks.length === 1 ? `Oyuncular (${playerCount})` : `Oyuncular ${start}-${end}`;
-
-                const lines = chunk.map(p =>
-                    `\`${String(p.id).padEnd(4)}\` ${escapeMD(p.name || 'İsimsiz')} \`${p.ping || '?'}ms\``
-                );
-                embed.addFields({ name: label, value: lines.join('\n') });
-            }
-        }
-
-        embed.setFooter({ text: `${host}:${port}` });
 
         await interaction.editReply({ embeds: [embed] });
     } catch (error) {
