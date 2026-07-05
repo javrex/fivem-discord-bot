@@ -6,7 +6,7 @@ import * as aktiflikbitirCommand from '../commands/aktiflikbitir.js';
 import * as komutlarCommand from '../commands/komutlar.js';
 import * as ticketkurCommand from '../commands/ticketkur.js';
 import * as mesajCommand from '../commands/mesaj.js';
-import * as fivemCommand from '../commands/fivem.js';
+import * as aktifoyuncularCommand from '../commands/aktifoyuncular.js';
 import * as idCommand from '../commands/id.js';
 
 import handleAktiflikButton from '../buttons/aktiflik.js';
@@ -24,7 +24,7 @@ const commandMap = {
     'komutlar': komutlarCommand,
     'ticketkur': ticketkurCommand,
     'mesaj': mesajCommand,
-    'fivem': fivemCommand,
+    'aktifoyuncular': aktifoyuncularCommand,
     'id': idCommand
 };
 
@@ -32,7 +32,7 @@ const commandMap = {
 export default async function(interaction, client) {
     try {
         if (interaction.isChatInputCommand()) {
-            if (interaction.commandName !== 'komutlar' && interaction.commandName !== 'fivem' && interaction.commandName !== 'id') {
+            if (interaction.commandName !== 'komutlar' && interaction.commandName !== 'aktifoyuncular' && interaction.commandName !== 'id') {
                 const allowedRoles = Array.isArray(config.allowedRoles) ? config.allowedRoles : [];
                 const hasPermission = interaction.member?.roles.cache.some(
                     role => allowedRoles.includes(role.id)

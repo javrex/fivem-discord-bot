@@ -49,8 +49,8 @@ const commands = [
                 .setRequired(true)),
 
     new SlashCommandBuilder()
-        .setName('fivem')
-        .setDescription('FiveM sunucu bilgilerini sorgular')
+        .setName('aktifoyuncular')
+        .setDescription('FiveM sunucusundaki aktif oyuncuları listeler')
         .addStringOption(option =>
             option.setName('server')
                 .setDescription('Sorgulanacak sunucu')
