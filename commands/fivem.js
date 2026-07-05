@@ -13,15 +13,21 @@ export async function execute(interaction) {
     }
 
     try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+
         const response = await fetch(`https://servers-frontend.fivem.net/api/servers/single/${serverId}`, {
+            signal: controller.signal,
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                 'Accept': 'application/json'
             }
         });
 
+        clearTimeout(timeout);
+
         if (!response.ok) {
-            return interaction.editReply({ content: `Sunucu bulunamadı veya API hatası. (${response.status})` });
+            return interaction.editReply({ content: `Sunucu bulunamadı. (${response.status})` });
         }
 
         const data = await response.json();
@@ -47,19 +53,19 @@ export async function execute(interaction) {
 
         const embed = new EmbedBuilder()
             .setColor(0x3498db)
-            .setTitle(`${displayName} | ${server.hostname || 'FiveM Sunucusu'}`)
+            .setTitle(`${displayName}`)
             .setDescription(`**Oyuncular:** ${players.length}/${maxPlayers}`)
             .addFields({ name: `Aktif Oyuncular (${players.length})`, value: playerList })
             .setFooter({ text: `Sunucu: ${displayName}` })
             .setTimestamp();
 
-        if (players.length > 0) {
-            embed.setThumbnail(`https://servers-frontend.fivem.net/api/servers/single/${serverId}/icon`);
-        }
-
         await interaction.editReply({ embeds: [embed] });
     } catch (error) {
-        console.error('FiveM API hatası:', error);
-        await interaction.editReply({ content: 'Sunucu sorgulanırken hata oluştu.' });
+        if (error.name === 'AbortError') {
+            await interaction.editReply({ content: 'Sunucu yanıt vermedi, lütfen tekrar deneyin.' });
+        } else {
+            console.error('FiveM API hatası:', error);
+            await interaction.editReply({ content: 'Sunucu sorgulanırken hata oluştu.' });
+        }
     }
 }

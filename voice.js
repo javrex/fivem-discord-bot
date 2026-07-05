@@ -1,22 +1,34 @@
-import { joinVoiceChannel, VoiceConnectionStatus, entersState } from '@discordjs/voice';
-
+let voiceModule = null;
 let currentConnection = null;
+
+async function getVoiceModule() {
+    if (voiceModule === null) {
+        try {
+            voiceModule = await import('@discordjs/voice');
+        } catch {
+            voiceModule = false;
+        }
+    }
+    return voiceModule;
+}
 
 export function getCurrentConnection() {
     return currentConnection;
 }
 
 export async function joinVoice(client, channelId) {
+    const mod = await getVoiceModule();
+    if (!mod) return null;
+
     try {
         const channel = client.channels.cache.get(channelId);
-        if (!channel) {
-            console.log('Ses kanalı bulunamadı.');
-            return null;
-        }
+        if (!channel) return null;
 
         if (currentConnection) {
             currentConnection.destroy();
         }
+
+        const { joinVoiceChannel, VoiceConnectionStatus } = mod;
 
         currentConnection = joinVoiceChannel({
             channelId: channel.id,
@@ -26,27 +38,12 @@ export async function joinVoice(client, channelId) {
             selfMute: true
         });
 
-        console.log('Bağlantı oluşturuldu, durum:', currentConnection.state.status);
-
-        currentConnection.on(VoiceConnectionStatus.Disconnected, async () => {
-            try {
-                await Promise.race([
-                    entersState(currentConnection, VoiceConnectionStatus.Signalling, 5000),
-                    entersState(currentConnection, VoiceConnectionStatus.Connecting, 5000),
-                ]);
-            } catch {
-                currentConnection.destroy();
-                currentConnection = null;
-                setTimeout(() => joinVoice(client, channelId), 5000);
-            }
+        currentConnection.on(VoiceConnectionStatus.Destroyed, () => {
+            currentConnection = null;
         });
 
-        currentConnection.on(VoiceConnectionStatus.Ready, () => {
-            console.log(`${channel.name} ses kanalına bağlanıldı.`);
-        });
-
-        currentConnection.on('error', (error) => {
-            console.error('Ses bağlantısı hatası:', error);
+        currentConnection.on('error', () => {
+            currentConnection = null;
         });
 
         return currentConnection;

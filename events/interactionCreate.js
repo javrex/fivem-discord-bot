@@ -31,8 +31,9 @@ export default async function(interaction, client) {
     try {
         if (interaction.isChatInputCommand()) {
             if (interaction.commandName !== 'komutlar') {
+                const allowedRoles = Array.isArray(config.allowedRoles) ? config.allowedRoles : [];
                 const hasPermission = interaction.member?.roles.cache.some(
-                    role => config.allowedRoles.includes(role.id)
+                    role => allowedRoles.includes(role.id)
                 );
 
                 if (!hasPermission) {
