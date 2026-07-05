@@ -41,9 +41,9 @@ async function queryServerDirect(host, port) {
         try { players = await playersRes.json(); } catch {}
     }
 
-    const hostname = info.vars?.sv_hostname || info.hostname || host;
+    const hostname = info.vars?.sv_hostname || info.vars?.sv_projectName || info.hostname || host;
     const clients = typeof info.clients === 'number' ? info.clients : (Array.isArray(players) ? players.length : 0);
-    const maxClients = info.vars?.sv_maxclients || info.svMaxclients || '?';
+    const maxClients = info.vars?.sv_maxClients || info.vars?.sv_maxclients || info.svMaxclients || '?';
 
     return { hostname, clients, maxClients, players: Array.isArray(players) ? players : [], anySuccess };
 }
@@ -115,7 +115,6 @@ export async function execute(interaction) {
 
         await interaction.editReply({ embeds: [embed] });
     } catch (error) {
-        console.error('FiveM sorgu hatası:', error);
-        await interaction.editReply({ content: 'Sunucu sorgulanırken hata oluştu.' });
+        await interaction.editReply({ content: `Hata: ${error.message}` }).catch(() => {});
     }
 }
