@@ -12,6 +12,7 @@ export async function execute(interaction) {
             { name: '/maddex', value: 'Maddex buton mesajı gönderir. Katılanlar 20 kişiyle sınırlıdır, taşanlar yedek listesine eklenir.' },
             { name: '/toplusescekme', value: 'Belirtilen ses kanalına sunucudaki tüm kullanıcıları taşır.' },
             { name: '/ticketkur', value: 'Ticket panel mesajını kanala gönderir.' },
+            { name: '/mesaj', value: 'Bot ile belirtilen kanala mesaj gönderir.' },
             { name: '/komutlar', value: 'Tüm komutları listeler.' }
         )
         .setFooter({ text: interaction.guild.name })

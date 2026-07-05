@@ -33,7 +33,20 @@ const commands = [
 
     new SlashCommandBuilder()
         .setName('ticketkur')
-        .setDescription('Ticket panel mesajını gönderir')
+        .setDescription('Ticket panel mesajını gönderir'),
+
+    new SlashCommandBuilder()
+        .setName('mesaj')
+        .setDescription('Bot ile mesaj gönderir')
+        .addChannelOption(option =>
+            option.setName('kanal')
+                .setDescription('Mesajın gönderileceği kanal')
+                .addChannelTypes(ChannelType.GuildText)
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('mesaj')
+                .setDescription('Gönderilecek mesaj')
+                .setRequired(true))
 ];
 
 const rest = new REST({ version: '10' }).setToken(config.token);
