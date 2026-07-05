@@ -1,7 +1,13 @@
 import { EmbedBuilder } from 'discord.js';
-import config from '../config/index.js';
 
 const FETCH_TIMEOUT = 10000;
+
+const KNOWN_SERVERS = {
+    'well': '5.231.120.202',
+    'alesta_rp': 'alestarp.com',
+    'md_pvp': '46.203.182.30',
+    'guid_pvp': '141.98.50.34'
+};
 
 function parseAddress(value) {
     const parts = value.split(':');
@@ -82,8 +88,7 @@ export async function execute(interaction) {
     await interaction.deferReply();
 
     const serverChoice = interaction.options.getString('server');
-    const servers = config.fivemServers || {};
-    const address = servers[serverChoice];
+    const address = KNOWN_SERVERS[serverChoice];
 
     if (!address) {
         return interaction.editReply({ content: 'Sunucu bulunamadı.' });
