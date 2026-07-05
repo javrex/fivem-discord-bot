@@ -20,6 +20,10 @@ async function fetchWithTimeout(url, options = {}) {
     }
 }
 
+function escapeMD(text) {
+    return String(text).replace(/[_*~`|>]/g, '\\$&');
+}
+
 export async function execute(interaction) {
     await interaction.deferReply();
 
@@ -34,7 +38,7 @@ export async function execute(interaction) {
     const parts = address.split(':');
     const host = parts[0];
     const port = parts[1] || '30120';
-    const displayName = serverChoice.charAt(0).toUpperCase() + serverChoice.slice(1).replace('_', ' ');
+    const displayName = serverChoice.charAt(0).toUpperCase() + serverChoice.slice(1).replace(/_/g, ' ');
 
     try {
         const res = await fetchWithTimeout(`http://${host}:${port}/players.json`);
@@ -60,16 +64,23 @@ export async function execute(interaction) {
         const discordId = (player.identifiers || []).find(i => i.startsWith('discord:'));
         const steamId = (player.identifiers || []).find(i => i.startsWith('steam:'));
 
+        const discordValue = discordId
+            ? `<@${discordId.replace('discord:', '')}>`
+            : 'Tanımlanmamış';
+        const steamValue = steamId
+            ? `\`${steamId}\``
+            : 'Tanımlanmamış';
+
         const embed = new EmbedBuilder()
-            .setColor(0x2ecc71)
-            .setTitle('Oyuncu Bulundu')
-            .setDescription(`${displayName} sunucusunda **ID ${playerId}** sorgulandı`)
+            .setColor(0x2d3436)
+            .setTitle('Oyuncu Bilgisi')
+            .setDescription(`${displayName} — ID: **${playerId}**`)
             .addFields(
-                { name: 'İsim', value: player.name || 'Bilinmiyor', inline: true },
-                { name: 'ID', value: String(player.id), inline: true },
-                { name: 'Ping', value: `${player.ping || '?'} ms`, inline: true },
-                { name: 'Discord', value: discordId ? `<@${discordId.replace('discord:', '')}>` : 'Bağlı değil', inline: true },
-                { name: 'Steam', value: steamId ? `\`${steamId}\`` : 'Bağlı değil', inline: true },
+                { name: 'İsim', value: escapeMD(player.name || 'Bilinmiyor'), inline: true },
+                { name: 'ID', value: `\`${player.id}\``, inline: true },
+                { name: 'Ping', value: `\`${player.ping || '?'} ms\``, inline: true },
+                { name: 'Discord', value: discordValue, inline: true },
+                { name: 'Steam', value: steamValue, inline: true },
                 { name: 'Sunucu', value: displayName, inline: true }
             )
             .setFooter({ text: `${host}:${port}` })

@@ -84,6 +84,22 @@ async function queryServerCfx(host, port) {
     return null;
 }
 
+function escapeMD(text) {
+    return String(text).replace(/[_*~`|>]/g, '\\$&');
+}
+
+function makeProgressBar(current, max, length = 10) {
+    const maxNum = typeof max === 'number' && max > 0 ? max : 100;
+    const filled = Math.round((current / maxNum) * length);
+    return '🟩'.repeat(Math.min(filled, length)) + '⬜'.repeat(Math.max(length - filled, 0));
+}
+
+function chunkPlayers(players, size) {
+    const chunks = [];
+    for (let i = 0; i < players.length; i += size) chunks.push(players.slice(i, i + size));
+    return chunks;
+}
+
 export async function execute(interaction) {
     await interaction.deferReply();
 
@@ -95,7 +111,7 @@ export async function execute(interaction) {
     }
 
     const { host, port } = parseAddress(address);
-    const displayName = serverChoice.charAt(0).toUpperCase() + serverChoice.slice(1).replace('_', ' ');
+    const displayName = serverChoice.charAt(0).toUpperCase() + serverChoice.slice(1).replace(/_/g, ' ');
 
     try {
         let result = await queryServerDirect(host, port);
@@ -107,33 +123,41 @@ export async function execute(interaction) {
 
         const players = Array.isArray(result.players) ? result.players : [];
         const playerCount = players.length;
-        const maxClients = result.maxClients;
+        const maxVal = typeof result.maxClients === 'number' ? result.maxClients : parseInt(result.maxClients) || 0;
 
-        let playerList;
-        if (players.length === 0) {
-            playerList = 'Henüz oyuncu yok.';
-        } else {
-            const maxShow = 25;
-            const shown = players.slice(0, maxShow);
-            const lines = shown.map((p, i) => `\`${String(p.id).padEnd(4)}\` ${p.name || 'İsimsiz'} \`${p.ping || '?'}ms\``);
-            playerList = lines.join('\n');
-            if (players.length > maxShow) {
-                playerList += `\n… ve ${players.length - maxShow} kişi daha`;
-            }
-        }
+        const bar = makeProgressBar(playerCount, maxVal || playerCount || 1);
 
-        const color = playerCount === 0 ? 0x95a5a6
-            : playerCount < maxClients / 2 ? 0x2ecc71
-            : playerCount < maxClients * 0.8 ? 0xf39c12
-            : 0xe74c3c;
+        const color = playerCount === 0 ? 0x6c757d
+            : playerCount < (maxVal || 100) / 2 ? 0x00b894
+            : playerCount < (maxVal || 100) * 0.8 ? 0xfdcb6e
+            : 0xe17055;
 
         const embed = new EmbedBuilder()
             .setColor(color)
             .setTitle(displayName)
-            .setDescription(`**${playerCount}** / **${maxClients}** oyuncu aktif`)
-            .addFields({ name: `Oyuncu Listesi (${playerCount})`, value: playerList })
-            .setFooter({ text: `${host}:${port}` })
+            .setDescription(`${bar}  **${playerCount}** / **${result.maxClients}**`)
             .setTimestamp();
+
+        if (players.length === 0) {
+            embed.addFields({ name: 'Oyuncular', value: 'Sunucuda aktif oyuncu bulunmuyor.' });
+        } else {
+            const PER_PAGE = 25;
+            const chunks = chunkPlayers(players, PER_PAGE);
+
+            for (let i = 0; i < chunks.length; i++) {
+                const chunk = chunks[i];
+                const start = i * PER_PAGE + 1;
+                const end = i * PER_PAGE + chunk.length;
+                const label = chunks.length === 1 ? `Oyuncular (${playerCount})` : `Oyuncular ${start}-${end}`;
+
+                const lines = chunk.map(p =>
+                    `\`${String(p.id).padEnd(4)}\` ${escapeMD(p.name || 'İsimsiz')} \`${p.ping || '?'}ms\``
+                );
+                embed.addFields({ name: label, value: lines.join('\n') });
+            }
+        }
+
+        embed.setFooter({ text: `${host}:${port}` });
 
         await interaction.editReply({ embeds: [embed] });
     } catch (error) {
