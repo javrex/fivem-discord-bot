@@ -60,6 +60,24 @@ const commands = [
                     { name: 'Md Pvp', value: 'md_pvp' },
                     { name: 'Guid Pvp', value: 'guid_pvp' }
                 )
+                .setRequired(true)),
+
+    new SlashCommandBuilder()
+        .setName('id')
+        .setDescription('ID ile oyuncu sorgula')
+        .addStringOption(option =>
+            option.setName('server')
+                .setDescription('Sunucu seçin')
+                .addChoices(
+                    { name: 'Well', value: 'well' },
+                    { name: 'Alesta Rp', value: 'alesta_rp' },
+                    { name: 'Md Pvp', value: 'md_pvp' },
+                    { name: 'Guid Pvp', value: 'guid_pvp' }
+                )
+                .setRequired(true))
+        .addIntegerOption(option =>
+            option.setName('id')
+                .setDescription('Oyuncu ID')
                 .setRequired(true))
 ];
 

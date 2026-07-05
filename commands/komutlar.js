@@ -14,6 +14,7 @@ export async function execute(interaction) {
             { name: '/ticketkur', value: 'Ticket panel mesajını kanala gönderir.' },
             { name: '/mesaj', value: 'Bot ile belirtilen kanala mesaj gönderir.' },
             { name: '/fivem', value: 'FiveM sunucusunun aktif oyuncularını ve bilgilerini gösterir.' },
+            { name: '/id', value: 'FiveM sunucusunda ID ile oyuncu sorgular.' },
             { name: '/komutlar', value: 'Tüm komutları listeler.' }
         )
         .setFooter({ text: interaction.guild.name })

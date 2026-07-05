@@ -7,6 +7,7 @@ import * as komutlarCommand from '../commands/komutlar.js';
 import * as ticketkurCommand from '../commands/ticketkur.js';
 import * as mesajCommand from '../commands/mesaj.js';
 import * as fivemCommand from '../commands/fivem.js';
+import * as idCommand from '../commands/id.js';
 
 import handleAktiflikButton from '../buttons/aktiflik.js';
 import handleIngameButton from '../buttons/ingame.js';
@@ -23,14 +24,15 @@ const commandMap = {
     'komutlar': komutlarCommand,
     'ticketkur': ticketkurCommand,
     'mesaj': mesajCommand,
-    'fivem': fivemCommand
+    'fivem': fivemCommand,
+    'id': idCommand
 };
 
 // Gelen tüm etkileşimleri yönetir
 export default async function(interaction, client) {
     try {
         if (interaction.isChatInputCommand()) {
-            if (interaction.commandName !== 'komutlar' && interaction.commandName !== 'fivem') {
+            if (interaction.commandName !== 'komutlar' && interaction.commandName !== 'fivem' && interaction.commandName !== 'id') {
                 const allowedRoles = Array.isArray(config.allowedRoles) ? config.allowedRoles : [];
                 const hasPermission = interaction.member?.roles.cache.some(
                     role => allowedRoles.includes(role.id)
