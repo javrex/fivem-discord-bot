@@ -46,6 +46,20 @@ const commands = [
         .addStringOption(option =>
             option.setName('mesaj')
                 .setDescription('Gönderilecek mesaj')
+                .setRequired(true)),
+
+    new SlashCommandBuilder()
+        .setName('fivem')
+        .setDescription('FiveM sunucu bilgilerini sorgular')
+        .addStringOption(option =>
+            option.setName('server')
+                .setDescription('Sorgulanacak sunucu')
+                .addChoices(
+                    { name: 'Well', value: 'well' },
+                    { name: 'Alesta Rp', value: 'alesta_rp' },
+                    { name: 'Md Pvp', value: 'md_pvp' },
+                    { name: 'Guid Pvp', value: 'guid_pvp' }
+                )
                 .setRequired(true))
 ];
 

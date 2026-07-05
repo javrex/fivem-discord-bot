@@ -17,7 +17,10 @@ const config = {
     voiceChannelId: process.env.VOICE_CHANNEL_ID || fileConfig.voiceChannelId,
     ticketPanelChannelId: process.env.TICKET_PANEL_CHANNEL_ID || fileConfig.ticketPanelChannelId,
     ticketCategoryId: process.env.TICKET_CATEGORY_ID || fileConfig.ticketCategoryId,
-    ticketImageUrl: process.env.TICKET_IMAGE_URL || fileConfig.ticketImageUrl
+    ticketImageUrl: process.env.TICKET_IMAGE_URL || fileConfig.ticketImageUrl,
+    fivemServers: process.env.FIVEM_SERVERS
+        ? JSON.parse(process.env.FIVEM_SERVERS)
+        : (fileConfig.fivemServers || {})
 };
 
 export default config;

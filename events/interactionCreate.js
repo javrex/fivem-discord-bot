@@ -6,6 +6,7 @@ import * as aktiflikbitirCommand from '../commands/aktiflikbitir.js';
 import * as komutlarCommand from '../commands/komutlar.js';
 import * as ticketkurCommand from '../commands/ticketkur.js';
 import * as mesajCommand from '../commands/mesaj.js';
+import * as fivemCommand from '../commands/fivem.js';
 
 import handleAktiflikButton from '../buttons/aktiflik.js';
 import handleIngameButton from '../buttons/ingame.js';
@@ -21,7 +22,8 @@ const commandMap = {
     'aktiflikbitir': aktiflikbitirCommand,
     'komutlar': komutlarCommand,
     'ticketkur': ticketkurCommand,
-    'mesaj': mesajCommand
+    'mesaj': mesajCommand,
+    'fivem': fivemCommand
 };
 
 // Gelen tüm etkileşimleri yönetir

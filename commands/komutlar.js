@@ -13,6 +13,7 @@ export async function execute(interaction) {
             { name: '/toplusescekme', value: 'Belirtilen ses kanalına sunucudaki tüm kullanıcıları taşır.' },
             { name: '/ticketkur', value: 'Ticket panel mesajını kanala gönderir.' },
             { name: '/mesaj', value: 'Bot ile belirtilen kanala mesaj gönderir.' },
+            { name: '/fivem', value: 'FiveM sunucusunun aktif oyuncularını ve bilgilerini gösterir.' },
             { name: '/komutlar', value: 'Tüm komutları listeler.' }
         )
         .setFooter({ text: interaction.guild.name })
