@@ -1,37 +1,56 @@
 import { EmbedBuilder } from 'discord.js';
 import config from '../config/index.js';
 
+function isIp(value) {
+    return value && (value.includes('.') || value.includes(':'));
+}
+
+async function fetchServer(ip) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    const port = ip.includes(':') ? ip.split(':')[1] : '30120';
+    const host = ip.includes(':') ? ip.split(':')[0] : ip;
+
+    const headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json'
+    };
+
+    let response = await fetch(`https://servers-frontend.fivem.net/api/servers/session/${host}:${port}`, {
+        signal: controller.signal, headers
+    });
+
+    if (!response.ok) {
+        response = await fetch(`https://servers-frontend.fivem.net/api/servers/detail/${host}:${port}`, {
+            signal: controller.signal, headers
+        });
+    }
+
+    clearTimeout(timeout);
+    return response;
+}
+
 export async function execute(interaction) {
     await interaction.deferReply();
 
     const serverChoice = interaction.options.getString('server');
     const servers = config.fivemServers || {};
-    const serverId = servers[serverChoice];
+    const serverValue = servers[serverChoice];
 
-    if (!serverId) {
+    if (!serverValue) {
         return interaction.editReply({ content: 'Sunucu bulunamadı.' });
     }
 
     try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000);
-
-        const response = await fetch(`https://servers-frontend.fivem.net/api/servers/single/${serverId}`, {
-            signal: controller.signal,
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Accept': 'application/json'
-            }
-        });
-
-        clearTimeout(timeout);
+        const response = await fetchServer(serverValue);
 
         if (!response.ok) {
-            return interaction.editReply({ content: `Sunucu bulunamadı. (${response.status})` });
+            return interaction.editReply({ content: `Sunucu bulunamadı veya cevap vermiyor.` });
         }
 
         const data = await response.json();
-        const server = data.Data;
+        const server = data.Data || data;
 
         if (!server) {
             return interaction.editReply({ content: 'Sunucu bilgileri alınamadı.' });
@@ -53,7 +72,7 @@ export async function execute(interaction) {
 
         const embed = new EmbedBuilder()
             .setColor(0x3498db)
-            .setTitle(`${displayName}`)
+            .setTitle(displayName)
             .setDescription(`**Oyuncular:** ${players.length}/${maxPlayers}`)
             .addFields({ name: `Aktif Oyuncular (${players.length})`, value: playerList })
             .setFooter({ text: `Sunucu: ${displayName}` })
