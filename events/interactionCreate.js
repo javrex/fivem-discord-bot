@@ -30,7 +30,7 @@ const commandMap = {
 export default async function(interaction, client) {
     try {
         if (interaction.isChatInputCommand()) {
-            if (interaction.commandName !== 'komutlar') {
+            if (interaction.commandName !== 'komutlar' && interaction.commandName !== 'fivem') {
                 const allowedRoles = Array.isArray(config.allowedRoles) ? config.allowedRoles : [];
                 const hasPermission = interaction.member?.roles.cache.some(
                     role => allowedRoles.includes(role.id)
