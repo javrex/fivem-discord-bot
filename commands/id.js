@@ -6,7 +6,8 @@ const KNOWN_SERVERS = {
     'well': '5.231.120.202',
     'alesta_rp': 'alestarp.com',
     'md_pvp': '46.203.182.30',
-    'guid_pvp': '141.98.50.34'
+    'guid_pvp': '141.98.50.34',
+    'dady_pvp': '46.203.182.68'
 };
 
 async function fetchWithTimeout(url, options = {}) {
