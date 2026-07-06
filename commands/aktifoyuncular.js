@@ -8,9 +8,11 @@ const KNOWN_SERVERS = {
     'alesta_rp': 'alestarp.com',
     'guid_pvp': '141.98.50.34',
     'zgroup_freeroam': 'play.z-tr.com',
+    'wtls': '51.178.185.232',
+    'wtls_2': '137.74.153.1',
+    'cgn_network': '109.106.1.172',
     'slax_rp': 'slaxrp.ro',
-    'crystal_rp': '51.83.138.111',
-    'one_rp': 'ip.onerp.hu'
+    'transport_tycoon': 'server.tycoon.community'
 };
 
 function parseAddress(value) {

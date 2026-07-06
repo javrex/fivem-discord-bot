@@ -59,9 +59,11 @@ const commands = [
                     { name: 'Alesta Rp', value: 'alesta_rp' },
                     { name: 'Guid Pvp', value: 'guid_pvp' },
                     { name: 'Z-Group FreeRoam', value: 'zgroup_freeroam' },
+                    { name: 'Welcome to LS', value: 'wtls' },
+                    { name: 'Welcome to LS 2', value: 'wtls_2' },
+                    { name: 'CGN Network', value: 'cgn_network' },
                     { name: 'Slax RP', value: 'slax_rp' },
-                    { name: 'Crystal RP', value: 'crystal_rp' },
-                    { name: 'One RP', value: 'one_rp' }
+                    { name: 'Transport Tycoon', value: 'transport_tycoon' }
                 )
                 .setRequired(true)),
 
@@ -76,9 +78,11 @@ const commands = [
                     { name: 'Alesta Rp', value: 'alesta_rp' },
                     { name: 'Guid Pvp', value: 'guid_pvp' },
                     { name: 'Z-Group FreeRoam', value: 'zgroup_freeroam' },
+                    { name: 'Welcome to LS', value: 'wtls' },
+                    { name: 'Welcome to LS 2', value: 'wtls_2' },
+                    { name: 'CGN Network', value: 'cgn_network' },
                     { name: 'Slax RP', value: 'slax_rp' },
-                    { name: 'Crystal RP', value: 'crystal_rp' },
-                    { name: 'One RP', value: 'one_rp' }
+                    { name: 'Transport Tycoon', value: 'transport_tycoon' }
                 )
                 .setRequired(true))
         .addIntegerOption(option =>
