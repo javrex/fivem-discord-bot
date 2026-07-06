@@ -6,12 +6,11 @@ const FETCH_TIMEOUT = 10000;
 const KNOWN_SERVERS = {
     'well': '5.231.120.202',
     'alesta_rp': 'alestarp.com',
-    'md_pvp': '46.203.182.30',
     'guid_pvp': '141.98.50.34',
-    'fave_pvp': '46.203.182.16',
-    'gun_pvp': 'cfx:qqa5q44',
-    'md_rp': '185.29.166.7',
-    'lol_pvp': '45.8.187.16'
+    'zgroup_freeroam': 'play.z-tr.com',
+    'slax_rp': 'slaxrp.ro',
+    'crystal_rp': '51.83.138.111',
+    'one_rp': 'ip.onerp.hu'
 };
 
 function parseAddress(value) {
@@ -95,38 +94,6 @@ async function queryHTTP(host, port) {
     return { hostname, clients, maxClients, players: Array.isArray(players) ? players : [], anySuccess: true };
 }
 
-async function queryCfx(host, port) {
-    const endpoint = port ? `${host}:${port}` : host;
-    const urls = [
-        `https://servers-frontend.fivem.net/api/servers/session/${endpoint}`,
-        `https://servers-frontend.fivem.net/api/servers/detail/${endpoint}`
-    ];
-
-    for (const url of urls) {
-        const res = await fetchWithTimeout(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Accept': 'application/json'
-            }
-        });
-
-        if (res.ok) {
-            const data = await res.json();
-            const sv = data.Data || data;
-            if (sv && sv.players) {
-                return {
-                    hostname: sv.hostname || host,
-                    clients: sv.clients || 0,
-                    maxClients: sv.svMaxclients || '?',
-                    players: Array.isArray(sv.players) ? sv.players : [],
-                    anySuccess: true
-                };
-            }
-        }
-    }
-    return null;
-}
-
 export async function execute(interaction) {
     await interaction.deferReply();
 
@@ -138,34 +105,13 @@ export async function execute(interaction) {
     }
 
     const displayName = serverChoice.charAt(0).toUpperCase() + serverChoice.slice(1).replace(/_/g, ' ');
-    let host, port, isCfxCode;
-
-    if (address.startsWith('cfx:')) {
-        isCfxCode = true;
-        host = address.replace('cfx:', '');
-        port = '';
-    } else {
-        isCfxCode = false;
-        const parsed = parseAddress(address);
-        host = parsed.host;
-        port = parsed.port;
-    }
+    const { host, port } = parseAddress(address);
 
     try {
-        let result;
-
-        if (isCfxCode) {
-            result = await queryCfx(host);
-            if (!result) {
-                return interaction.editReply({ content: `${displayName} sunucusuna erişilemedi.` });
-            }
-        } else {
-            result = await queryA2S(host, port);
-            if (!result) result = await queryHTTP(host, port);
-            if (!result) result = await queryCfx(host, port);
-            if (!result) {
-                return interaction.editReply({ content: `${displayName} sunucusuna erişilemedi.` });
-            }
+        let result = await queryA2S(host, port);
+        if (!result) result = await queryHTTP(host, port);
+        if (!result) {
+            return interaction.editReply({ content: `${displayName} sunucusuna erişilemedi.` });
         }
 
         const players = Array.isArray(result.players) ? result.players : [];
@@ -202,7 +148,7 @@ export async function execute(interaction) {
             .setColor(color)
             .setTitle(displayName)
             .setDescription(descLines.join('\n'))
-            .setFooter({ text: isCfxCode ? `cfx:${host}` : `${host}:${port}` })
+            .setFooter({ text: `${host}:${port}` })
             .setTimestamp();
 
         await interaction.editReply({ embeds: [embed] });

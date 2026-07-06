@@ -6,12 +6,11 @@ const FETCH_TIMEOUT = 10000;
 const KNOWN_SERVERS = {
     'well': '5.231.120.202',
     'alesta_rp': 'alestarp.com',
-    'md_pvp': '46.203.182.30',
     'guid_pvp': '141.98.50.34',
-    'fave_pvp': '46.203.182.16',
-    'gun_pvp': 'cfx:qqa5q44',
-    'md_rp': '185.29.166.7',
-    'lol_pvp': '45.8.187.16'
+    'zgroup_freeroam': 'play.z-tr.com',
+    'slax_rp': 'slaxrp.ro',
+    'crystal_rp': '51.83.138.111',
+    'one_rp': 'ip.onerp.hu'
 };
 
 async function fetchWithTimeout(url, options = {}) {
@@ -55,21 +54,6 @@ async function getPlayersFromHTTP(host, port) {
     return data;
 }
 
-async function getPlayersFromCfx(host, port) {
-    const endpoint = port ? `${host}:${port}` : host;
-    const res = await fetchWithTimeout(`https://servers-frontend.fivem.net/api/servers/session/${endpoint}`, {
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'application/json'
-        }
-    }).catch(() => null);
-    if (!res || !res.ok) return null;
-    const data = await res.json().catch(() => null);
-    const sv = data?.Data || data;
-    if (sv && Array.isArray(sv.players)) return sv.players;
-    return null;
-}
-
 export async function execute(interaction) {
     await interaction.deferReply();
 
@@ -81,26 +65,16 @@ export async function execute(interaction) {
         return interaction.editReply({ content: 'Sunucu bulunamadı.' });
     }
 
+    const parts = address.split(':');
+    const host = parts[0];
+    const port = parts[1] || '30120';
     const displayName = serverChoice.charAt(0).toUpperCase() + serverChoice.slice(1).replace(/_/g, ' ');
 
     try {
-        let players;
-
-        if (address.startsWith('cfx:')) {
-            players = await getPlayersFromCfx(address.replace('cfx:', ''));
-            if (!players) {
-                return interaction.editReply({ content: `${displayName} sunucusuna erişilemedi.` });
-            }
-        } else {
-            const parts = address.split(':');
-            const host = parts[0];
-            const port = parts[1] || '30120';
-            players = await getPlayersFromA2S(host, port);
-            if (!players) players = await getPlayersFromHTTP(host, port);
-            if (!players) players = await getPlayersFromCfx(host, port);
-            if (!players) {
-                return interaction.editReply({ content: `${displayName} sunucusuna erişilemedi.` });
-            }
+        let players = await getPlayersFromA2S(host, port);
+        if (!players) players = await getPlayersFromHTTP(host, port);
+        if (!players) {
+            return interaction.editReply({ content: `${displayName} sunucusuna erişilemedi.` });
         }
 
         if (!Array.isArray(players) || players.length === 0) {
@@ -130,7 +104,7 @@ export async function execute(interaction) {
                 { name: 'Steam', value: steamId ? `\`${steamId}\`` : 'Tanımlanmamış', inline: true },
                 { name: 'Sunucu', value: displayName, inline: true }
             )
-            .setFooter({ text: address.startsWith('cfx:') ? `cfx:${address.replace('cfx:', '')}` : address })
+            .setFooter({ text: address })
             .setTimestamp();
 
         await interaction.editReply({ embeds: [embed] });

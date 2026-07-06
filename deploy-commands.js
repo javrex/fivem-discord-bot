@@ -57,12 +57,11 @@ const commands = [
                 .addChoices(
                     { name: 'Well', value: 'well' },
                     { name: 'Alesta Rp', value: 'alesta_rp' },
-                    { name: 'Md Pvp', value: 'md_pvp' },
                     { name: 'Guid Pvp', value: 'guid_pvp' },
-                    { name: 'Fave Pvp', value: 'fave_pvp' },
-                    { name: 'Gun Pvp', value: 'gun_pvp' },
-                    { name: 'Md Rp', value: 'md_rp' },
-                    { name: 'Lol Pvp', value: 'lol_pvp' }
+                    { name: 'Z-Group FreeRoam', value: 'zgroup_freeroam' },
+                    { name: 'Slax RP', value: 'slax_rp' },
+                    { name: 'Crystal RP', value: 'crystal_rp' },
+                    { name: 'One RP', value: 'one_rp' }
                 )
                 .setRequired(true)),
 
@@ -75,12 +74,11 @@ const commands = [
                 .addChoices(
                     { name: 'Well', value: 'well' },
                     { name: 'Alesta Rp', value: 'alesta_rp' },
-                    { name: 'Md Pvp', value: 'md_pvp' },
                     { name: 'Guid Pvp', value: 'guid_pvp' },
-                    { name: 'Fave Pvp', value: 'fave_pvp' },
-                    { name: 'Gun Pvp', value: 'gun_pvp' },
-                    { name: 'Md Rp', value: 'md_rp' },
-                    { name: 'Lol Pvp', value: 'lol_pvp' }
+                    { name: 'Z-Group FreeRoam', value: 'zgroup_freeroam' },
+                    { name: 'Slax RP', value: 'slax_rp' },
+                    { name: 'Crystal RP', value: 'crystal_rp' },
+                    { name: 'One RP', value: 'one_rp' }
                 )
                 .setRequired(true))
         .addIntegerOption(option =>
