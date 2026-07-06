@@ -1,4 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
+import { GameDig } from 'gamedig';
 
 const FETCH_TIMEOUT = 10000;
 
@@ -29,7 +30,41 @@ async function fetchWithTimeout(url, options = {}) {
     }
 }
 
-async function queryServerDirect(host, port) {
+function escapeMD(text) {
+    return String(text).replace(/[_*~`|>]/g, '\\$&');
+}
+
+function makeBar(current, max, length = 8) {
+    const m = typeof max === 'number' && max > 0 ? max : 100;
+    const filled = Math.round((current / m) * length);
+    return '🟩'.repeat(Math.min(filled, length)) + '⬜'.repeat(Math.max(length - filled, 0));
+}
+
+async function queryA2S(host, port) {
+    try {
+        const state = await GameDig.query({
+            type: 'gta5f',
+            host, port: parseInt(port),
+            socketTimeout: 5000
+        });
+        const players = (state.players || []).map(p => ({
+            id: typeof p.id === 'number' ? p.id : 0,
+            name: p.name || 'İsimsiz',
+            ping: p.ping || 0
+        }));
+        return {
+            hostname: state.name || host,
+            clients: players.length,
+            maxClients: state.maxplayers || '?',
+            players,
+            anySuccess: true
+        };
+    } catch {
+        return null;
+    }
+}
+
+async function queryHTTP(host, port) {
     const baseUrl = `http://${host}:${port}`;
     let anySuccess = false;
 
@@ -51,14 +86,16 @@ async function queryServerDirect(host, port) {
         try { players = await playersRes.json(); } catch {}
     }
 
+    if (!anySuccess) return null;
+
     const hostname = info.vars?.sv_hostname || info.vars?.sv_projectName || info.hostname || host;
     const clients = typeof info.clients === 'number' ? info.clients : (Array.isArray(players) ? players.length : 0);
     const maxClients = info.vars?.sv_maxClients || info.vars?.sv_maxclients || info.svMaxclients || '?';
 
-    return { hostname, clients, maxClients, players: Array.isArray(players) ? players : [], anySuccess };
+    return { hostname, clients, maxClients, players: Array.isArray(players) ? players : [], anySuccess: true };
 }
 
-async function queryServerCfx(host, port) {
+async function queryCfx(host, port) {
     const endpoint = port ? `${host}:${port}` : host;
     const urls = [
         `https://servers-frontend.fivem.net/api/servers/session/${endpoint}`,
@@ -81,22 +118,13 @@ async function queryServerCfx(host, port) {
                     hostname: sv.hostname || host,
                     clients: sv.clients || 0,
                     maxClients: sv.svMaxclients || '?',
-                    players: Array.isArray(sv.players) ? sv.players : []
+                    players: Array.isArray(sv.players) ? sv.players : [],
+                    anySuccess: true
                 };
             }
         }
     }
     return null;
-}
-
-function escapeMD(text) {
-    return String(text).replace(/[_*~`|>]/g, '\\$&');
-}
-
-function makeBar(current, max, length = 8) {
-    const m = typeof max === 'number' && max > 0 ? max : 100;
-    const filled = Math.round((current / m) * length);
-    return '🟩'.repeat(Math.min(filled, length)) + '⬜'.repeat(Math.max(length - filled, 0));
 }
 
 export async function execute(interaction) {
@@ -127,15 +155,16 @@ export async function execute(interaction) {
         let result;
 
         if (isCfxCode) {
-            result = await queryServerCfx(host, port || undefined);
+            result = await queryCfx(host);
             if (!result) {
-                return interaction.editReply({ content: `${displayName} sunucusuna erişilemedi (Cfx.re kaydı bulunamadı).` });
+                return interaction.editReply({ content: `${displayName} sunucusuna erişilemedi.` });
             }
         } else {
-            result = await queryServerDirect(host, port);
-            if (!result.anySuccess) {
-                const cfx = await queryServerCfx(host, port);
-                if (cfx) result = cfx;
+            result = await queryA2S(host, port);
+            if (!result) result = await queryHTTP(host, port);
+            if (!result) result = await queryCfx(host, port);
+            if (!result) {
+                return interaction.editReply({ content: `${displayName} sunucusuna erişilemedi.` });
             }
         }
 

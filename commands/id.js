@@ -1,4 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
+import { GameDig } from 'gamedig';
 
 const FETCH_TIMEOUT = 10000;
 
@@ -28,16 +29,43 @@ function escapeMD(text) {
     return String(text).replace(/[_*~`|>]/g, '\\$&');
 }
 
-async function queryCfxPlayers(host) {
-    const res = await fetchWithTimeout(`https://servers-frontend.fivem.net/api/servers/session/${host}`, {
+async function getPlayersFromA2S(host, port) {
+    try {
+        const state = await GameDig.query({
+            type: 'gta5f',
+            host, port: parseInt(port),
+            socketTimeout: 5000
+        });
+        return (state.players || []).map(p => ({
+            id: typeof p.id === 'number' ? p.id : 0,
+            name: p.name || 'İsimsiz',
+            ping: p.ping || 0,
+            identifiers: []
+        }));
+    } catch {
+        return null;
+    }
+}
+
+async function getPlayersFromHTTP(host, port) {
+    const res = await fetchWithTimeout(`http://${host}:${port}/players.json`).catch(() => null);
+    if (!res || !res.ok) return null;
+    const data = await res.json().catch(() => null);
+    if (!Array.isArray(data)) return null;
+    return data;
+}
+
+async function getPlayersFromCfx(host, port) {
+    const endpoint = port ? `${host}:${port}` : host;
+    const res = await fetchWithTimeout(`https://servers-frontend.fivem.net/api/servers/session/${endpoint}`, {
         headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Accept': 'application/json'
         }
-    });
+    }).catch(() => null);
     if (!res || !res.ok) return null;
-    const data = await res.json();
-    const sv = data.Data || data;
+    const data = await res.json().catch(() => null);
+    const sv = data?.Data || data;
     if (sv && Array.isArray(sv.players)) return sv.players;
     return null;
 }
@@ -54,14 +82,12 @@ export async function execute(interaction) {
     }
 
     const displayName = serverChoice.charAt(0).toUpperCase() + serverChoice.slice(1).replace(/_/g, ' ');
-    const isCfx = address.startsWith('cfx:');
 
     try {
         let players;
 
-        if (isCfx) {
-            const code = address.replace('cfx:', '');
-            players = await queryCfxPlayers(code);
+        if (address.startsWith('cfx:')) {
+            players = await getPlayersFromCfx(address.replace('cfx:', ''));
             if (!players) {
                 return interaction.editReply({ content: `${displayName} sunucusuna erişilemedi.` });
             }
@@ -69,11 +95,12 @@ export async function execute(interaction) {
             const parts = address.split(':');
             const host = parts[0];
             const port = parts[1] || '30120';
-            const res = await fetchWithTimeout(`http://${host}:${port}/players.json`);
-            if (!res || !res.ok) {
-                return interaction.editReply({ content: 'Sunucudan oyuncu listesi alınamadı.' });
+            players = await getPlayersFromA2S(host, port);
+            if (!players) players = await getPlayersFromHTTP(host, port);
+            if (!players) players = await getPlayersFromCfx(host, port);
+            if (!players) {
+                return interaction.editReply({ content: `${displayName} sunucusuna erişilemedi.` });
             }
-            players = await res.json();
         }
 
         if (!Array.isArray(players) || players.length === 0) {
@@ -91,13 +118,6 @@ export async function execute(interaction) {
         const discordId = (player.identifiers || []).find(i => i.startsWith('discord:'));
         const steamId = (player.identifiers || []).find(i => i.startsWith('steam:'));
 
-        const discordValue = discordId
-            ? `<@${discordId.replace('discord:', '')}>`
-            : 'Tanımlanmamış';
-        const steamValue = steamId
-            ? `\`${steamId}\``
-            : 'Tanımlanmamış';
-
         const embed = new EmbedBuilder()
             .setColor(0x2d3436)
             .setTitle('Oyuncu Bilgisi')
@@ -106,11 +126,11 @@ export async function execute(interaction) {
                 { name: 'İsim', value: escapeMD(player.name || 'Bilinmiyor'), inline: true },
                 { name: 'ID', value: `\`${player.id}\``, inline: true },
                 { name: 'Ping', value: `\`${player.ping || '?'} ms\``, inline: true },
-                { name: 'Discord', value: discordValue, inline: true },
-                { name: 'Steam', value: steamValue, inline: true },
+                { name: 'Discord', value: discordId ? `<@${discordId.replace('discord:', '')}>` : 'Tanımlanmamış', inline: true },
+                { name: 'Steam', value: steamId ? `\`${steamId}\`` : 'Tanımlanmamış', inline: true },
                 { name: 'Sunucu', value: displayName, inline: true }
             )
-            .setFooter({ text: isCfx ? `cfx:${address.replace('cfx:', '')}` : address })
+            .setFooter({ text: address.startsWith('cfx:') ? `cfx:${address.replace('cfx:', '')}` : address })
             .setTimestamp();
 
         await interaction.editReply({ embeds: [embed] });
