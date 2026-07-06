@@ -58,7 +58,11 @@ const commands = [
                     { name: 'Well', value: 'well' },
                     { name: 'Alesta Rp', value: 'alesta_rp' },
                     { name: 'Md Pvp', value: 'md_pvp' },
-                    { name: 'Guid Pvp', value: 'guid_pvp' }
+                    { name: 'Guid Pvp', value: 'guid_pvp' },
+                    { name: 'Fave Pvp', value: 'fave_pvp' },
+                    { name: 'Gun Pvp', value: 'gun_pvp' },
+                    { name: 'Md Rp', value: 'md_rp' },
+                    { name: 'Lol Pvp', value: 'lol_pvp' }
                 )
                 .setRequired(true)),
 
@@ -72,7 +76,11 @@ const commands = [
                     { name: 'Well', value: 'well' },
                     { name: 'Alesta Rp', value: 'alesta_rp' },
                     { name: 'Md Pvp', value: 'md_pvp' },
-                    { name: 'Guid Pvp', value: 'guid_pvp' }
+                    { name: 'Guid Pvp', value: 'guid_pvp' },
+                    { name: 'Fave Pvp', value: 'fave_pvp' },
+                    { name: 'Gun Pvp', value: 'gun_pvp' },
+                    { name: 'Md Rp', value: 'md_rp' },
+                    { name: 'Lol Pvp', value: 'lol_pvp' }
                 )
                 .setRequired(true))
         .addIntegerOption(option =>

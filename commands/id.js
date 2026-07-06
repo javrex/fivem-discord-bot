@@ -6,7 +6,11 @@ const KNOWN_SERVERS = {
     'well': '5.231.120.202',
     'alesta_rp': 'alestarp.com',
     'md_pvp': '46.203.182.30',
-    'guid_pvp': '141.98.50.34'
+    'guid_pvp': '141.98.50.34',
+    'fave_pvp': '46.203.182.16',
+    'gun_pvp': 'cfx:qqa5q44',
+    'md_rp': '185.29.166.7',
+    'lol_pvp': '45.8.187.16'
 };
 
 async function fetchWithTimeout(url, options = {}) {
@@ -24,6 +28,20 @@ function escapeMD(text) {
     return String(text).replace(/[_*~`|>]/g, '\\$&');
 }
 
+async function queryCfxPlayers(host) {
+    const res = await fetchWithTimeout(`https://servers-frontend.fivem.net/api/servers/session/${host}`, {
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'application/json'
+        }
+    });
+    if (!res || !res.ok) return null;
+    const data = await res.json();
+    const sv = data.Data || data;
+    if (sv && Array.isArray(sv.players)) return sv.players;
+    return null;
+}
+
 export async function execute(interaction) {
     await interaction.deferReply();
 
@@ -35,19 +53,28 @@ export async function execute(interaction) {
         return interaction.editReply({ content: 'Sunucu bulunamadı.' });
     }
 
-    const parts = address.split(':');
-    const host = parts[0];
-    const port = parts[1] || '30120';
     const displayName = serverChoice.charAt(0).toUpperCase() + serverChoice.slice(1).replace(/_/g, ' ');
+    const isCfx = address.startsWith('cfx:');
 
     try {
-        const res = await fetchWithTimeout(`http://${host}:${port}/players.json`);
+        let players;
 
-        if (!res || !res.ok) {
-            return interaction.editReply({ content: 'Sunucudan oyuncu listesi alınamadı.' });
+        if (isCfx) {
+            const code = address.replace('cfx:', '');
+            players = await queryCfxPlayers(code);
+            if (!players) {
+                return interaction.editReply({ content: `${displayName} sunucusuna erişilemedi.` });
+            }
+        } else {
+            const parts = address.split(':');
+            const host = parts[0];
+            const port = parts[1] || '30120';
+            const res = await fetchWithTimeout(`http://${host}:${port}/players.json`);
+            if (!res || !res.ok) {
+                return interaction.editReply({ content: 'Sunucudan oyuncu listesi alınamadı.' });
+            }
+            players = await res.json();
         }
-
-        const players = await res.json();
 
         if (!Array.isArray(players) || players.length === 0) {
             return interaction.editReply({ content: 'Sunucuda hiç oyuncu yok.' });
@@ -83,7 +110,7 @@ export async function execute(interaction) {
                 { name: 'Steam', value: steamValue, inline: true },
                 { name: 'Sunucu', value: displayName, inline: true }
             )
-            .setFooter({ text: `${host}:${port}` })
+            .setFooter({ text: isCfx ? `cfx:${address.replace('cfx:', '')}` : address })
             .setTimestamp();
 
         await interaction.editReply({ embeds: [embed] });

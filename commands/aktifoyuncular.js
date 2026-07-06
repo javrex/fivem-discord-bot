@@ -6,7 +6,11 @@ const KNOWN_SERVERS = {
     'well': '5.231.120.202',
     'alesta_rp': 'alestarp.com',
     'md_pvp': '46.203.182.30',
-    'guid_pvp': '141.98.50.34'
+    'guid_pvp': '141.98.50.34',
+    'fave_pvp': '46.203.182.16',
+    'gun_pvp': 'cfx:qqa5q44',
+    'md_rp': '185.29.166.7',
+    'lol_pvp': '45.8.187.16'
 };
 
 function parseAddress(value) {
@@ -55,9 +59,10 @@ async function queryServerDirect(host, port) {
 }
 
 async function queryServerCfx(host, port) {
+    const endpoint = port ? `${host}:${port}` : host;
     const urls = [
-        `https://servers-frontend.fivem.net/api/servers/session/${host}:${port}`,
-        `https://servers-frontend.fivem.net/api/servers/detail/${host}:${port}`
+        `https://servers-frontend.fivem.net/api/servers/session/${endpoint}`,
+        `https://servers-frontend.fivem.net/api/servers/detail/${endpoint}`
     ];
 
     for (const url of urls) {
@@ -104,15 +109,34 @@ export async function execute(interaction) {
         return interaction.editReply({ content: 'Sunucu bulunamadı.' });
     }
 
-    const { host, port } = parseAddress(address);
     const displayName = serverChoice.charAt(0).toUpperCase() + serverChoice.slice(1).replace(/_/g, ' ');
+    let host, port, isCfxCode;
+
+    if (address.startsWith('cfx:')) {
+        isCfxCode = true;
+        host = address.replace('cfx:', '');
+        port = '';
+    } else {
+        isCfxCode = false;
+        const parsed = parseAddress(address);
+        host = parsed.host;
+        port = parsed.port;
+    }
 
     try {
-        let result = await queryServerDirect(host, port);
+        let result;
 
-        if (!result.anySuccess) {
-            const cfx = await queryServerCfx(host, port);
-            if (cfx) result = cfx;
+        if (isCfxCode) {
+            result = await queryServerCfx(host, port || undefined);
+            if (!result) {
+                return interaction.editReply({ content: `${displayName} sunucusuna erişilemedi (Cfx.re kaydı bulunamadı).` });
+            }
+        } else {
+            result = await queryServerDirect(host, port);
+            if (!result.anySuccess) {
+                const cfx = await queryServerCfx(host, port);
+                if (cfx) result = cfx;
+            }
         }
 
         const players = Array.isArray(result.players) ? result.players : [];
@@ -149,7 +173,7 @@ export async function execute(interaction) {
             .setColor(color)
             .setTitle(displayName)
             .setDescription(descLines.join('\n'))
-            .setFooter({ text: `${host}:${port}` })
+            .setFooter({ text: isCfxCode ? `cfx:${host}` : `${host}:${port}` })
             .setTimestamp();
 
         await interaction.editReply({ embeds: [embed] });
