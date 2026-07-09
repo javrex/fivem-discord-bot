@@ -3,7 +3,8 @@ import { EmbedBuilder } from 'discord.js';
 const KNOWN_SERVERS = {
     'well': '5.231.120.202',
     'alesta_rp': 'alestarp.com',
-    'guid_pvp': '141.98.50.34'
+    'guid_pvp': '141.98.50.34',
+    'md_rp': '185.29.166.7'
 };
 
 function parseAddress(value) {
