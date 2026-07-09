@@ -1,4 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
+import { GameDig } from 'gamedig';
 
 const KNOWN_SERVERS = {
     'well': '5.231.120.202',
@@ -8,6 +9,35 @@ const KNOWN_SERVERS = {
 
 function escapeMD(text) {
     return String(text).replace(/[_*~`|>]/g, '\\$&');
+}
+
+async function getPlayers(host, port) {
+    try {
+        const state = await GameDig.query({
+            type: 'gta5f',
+            host, port: parseInt(port),
+            socketTimeout: 3000,
+            attemptTimeout: 3000,
+            maxAttempts: 1
+        });
+        return (state.players || []).map(p => ({
+            id: typeof p.id === 'number' ? p.id : 0,
+            name: p.name || 'İsimsiz',
+            ping: p.ping || 0
+        }));
+    } catch {
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 4000);
+            const res = await fetch(`http://${host}:${port}/players.json`, { signal: controller.signal });
+            clearTimeout(timer);
+            if (res.ok) {
+                const data = await res.json();
+                return Array.isArray(data) ? data : [];
+            }
+        } catch {}
+        return [];
+    }
 }
 
 export async function execute(interaction) {
@@ -23,18 +53,7 @@ export async function execute(interaction) {
         const port = parts[1] || '30120';
         const displayName = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
 
-        let players = [];
-        try {
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 4000);
-            const res = await fetch(`http://${host}:${port}/players.json`, { signal: controller.signal });
-            clearTimeout(timer);
-            if (res.ok) {
-                const data = await res.json();
-                if (Array.isArray(data)) players = data;
-            }
-        } catch {}
-
+        const players = await getPlayers(host, port);
         const matched = players.filter(p => p.name && p.name.toLowerCase().includes(search));
         if (matched.length === 0) continue;
 
@@ -46,7 +65,7 @@ export async function execute(interaction) {
         embeds.push(new EmbedBuilder()
             .setColor(0x9b59b6)
             .setTitle(`${displayName} — ${matched.length} oyuncu`)
-            .setDescription(lines.length > 0 ? lines.join('\n') : 'Eşleşme bulunamadı.')
+            .setDescription(lines.join('\n'))
             .setFooter({ text: `${host}:${port}` })
             .setTimestamp());
     }
