@@ -1,4 +1,4 @@
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } from 'discord.js';
 import { GameDig } from 'gamedig';
 
 const KNOWN_SERVERS = {
@@ -116,78 +116,97 @@ async function queryCfxAPI(joinCode) {
     }
 }
 
-async function getDetailedPlayerList(serverKey) {
+const playerCache = new Map();
+const CACHE_TTL = 30000;
+
+async function getCachedPlayerList(serverKey, force = false) {
+    if (!force) {
+        const cached = playerCache.get(serverKey);
+        if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.data;
+    }
     const cfxCode = CFX_SERVERS[serverKey];
+    let players = null;
     if (cfxCode) {
         try {
             const res = await fetch(`https://frontend.cfx-services.net/api/servers/single/${cfxCode}`, {
                 signal: AbortSignal.timeout(5000),
                 headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
             });
-            if (!res.ok) return null;
-            const data = await res.json();
-            return data.Data?.players || null;
-        } catch {
-            return null;
+            if (res.ok) {
+                const data = await res.json();
+                players = data.Data?.players || null;
+            }
+        } catch { /* ignore */ }
+    } else {
+        const address = KNOWN_SERVERS[serverKey];
+        if (address) {
+            const { host, port } = parseAddress(address);
+            const result = await queryServer(host, port);
+            players = result?.players || null;
         }
     }
-    const address = KNOWN_SERVERS[serverKey];
-    if (!address) return null;
-    const { host, port } = parseAddress(address);
-    const result = await queryServer(host, port);
-    return result?.players || null;
+    if (players) playerCache.set(serverKey, { data: players, ts: Date.now() });
+    return players;
 }
 
-function formatPlayerDetailed(p) {
-    const discordId = (p.identifiers || []).find(id => id.startsWith('discord:'));
-    return [
-        `👤 **${escapeMD(p.name || 'İsimsiz')}**`,
-        `🆔 Server ID: \`${typeof p.id === 'number' ? p.id : 0}\``,
-        discordId ? `💬 Discord: \`${discordId.replace('discord:', '')}\`` : `💬 Discord: Bulunamadı`,
-        `📶 Ping: \`${p.ping || '?'}ms\``,
-    ].join('\n');
+function buildPlayerSelectOptions(players, page) {
+    const start = page * 25;
+    const pagePlayers = players.slice(start, start + 25);
+    return pagePlayers.map(p => ({
+        label: (p.name || 'İsimsiz').substring(0, 100),
+        value: String(typeof p.id === 'number' ? p.id : 0),
+        description: `Ping: ${p.ping || '?'}ms • ID: ${p.id}`.substring(0, 100)
+    }));
 }
 
-function buildDetailedEmbed(serverKey, players, page, perPage = 5) {
-    const displayName = serverKey.charAt(0).toUpperCase() + serverKey.slice(1).replace(/_/g, ' ');
-    const totalPages = Math.ceil(players.length / perPage) || 1;
-    const start = page * perPage;
-    const pagePlayers = players.slice(start, start + perPage);
-    const embed = new EmbedBuilder()
-        .setColor(0x2b2d31)
-        .setTitle(`🔎 ${displayName} — Detaylı Sorgu`)
-        .setDescription(pagePlayers.length > 0 ? pagePlayers.map(formatPlayerDetailed).join('\n\n') : 'Oyuncu bulunamadı.')
-        .setFooter({ text: `Sayfa ${page + 1}/${totalPages} • ${players.length} oyuncu` })
-        .setTimestamp();
-    return embed;
-}
-
-function buildDetailButtons(serverKey, page, totalPages) {
-    const row = new ActionRowBuilder();
-    if (totalPages > 1) {
-        row.addComponents(
-            new ButtonBuilder()
-                .setCustomId(`prev~${serverKey}~${page}`)
-                .setLabel('Önceki Sayfa')
-                .setStyle(ButtonStyle.Secondary)
-                .setEmoji('⬅')
-                .setDisabled(page === 0),
-            new ButtonBuilder()
-                .setCustomId(`next~${serverKey}~${page}`)
-                .setLabel('Sonraki Sayfa')
-                .setStyle(ButtonStyle.Secondary)
-                .setEmoji('➡')
-                .setDisabled(page >= totalPages - 1),
-        );
-    }
-    row.addComponents(
+function buildMainComponents(serverKey, players, page) {
+    const totalPages = Math.ceil(players.length / 25) || 1;
+    const selectRow = new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+            .setCustomId(`select~${serverKey}`)
+            .setPlaceholder('DETAYLI SORGU İÇİN OYUNCU SEÇİN')
+            .addOptions(buildPlayerSelectOptions(players, page))
+    );
+    const navRow = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`prev~${serverKey}~${page}`)
+            .setLabel('Önceki Sayfa')
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji('⬅')
+            .setDisabled(page === 0),
+        new ButtonBuilder()
+            .setCustomId(`next~${serverKey}~${page}`)
+            .setLabel('Sonraki Sayfa')
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji('➡')
+            .setDisabled(page >= totalPages - 1),
         new ButtonBuilder()
             .setCustomId(`refresh~${serverKey}~${page}`)
             .setLabel('Yenile')
             .setStyle(ButtonStyle.Primary)
             .setEmoji('🔄')
     );
-    return row;
+    return [selectRow, navRow];
+}
+
+function buildPlayerDetailEmbed(displayName, player) {
+    const discordId = (player.identifiers || []).find(id => id.startsWith('discord:'));
+    const fivemId = (player.identifiers || []).find(id => id.startsWith('license:') || id.startsWith('fivem:'));
+    const steamId = (player.identifiers || []).find(id => id.startsWith('steam:'));
+    const embed = new EmbedBuilder()
+        .setColor(0x2b2d31)
+        .setTitle(`🔎 ${displayName} — Oyuncu Detayı`)
+        .addFields(
+            { name: '👤 Oyuncu Adı', value: escapeMD(player.name || 'İsimsiz'), inline: true },
+            { name: '🆔 Server ID', value: `\`${typeof player.id === 'number' ? player.id : 0}\``, inline: true },
+            { name: '📶 Ping', value: `\`${player.ping || '?'}ms\``, inline: true },
+            { name: '💬 Discord ID', value: discordId ? `\`${discordId.replace('discord:', '')}\`` : 'Bulunamadı', inline: false },
+            { name: '🎮 FiveM License', value: fivemId ? `\`${fivemId.substring(0, 60)}\`` : 'Bulunamadı', inline: false },
+            { name: '🎮 Steam ID', value: steamId ? `\`${steamId}\`` : 'Bulunamadı', inline: false }
+        )
+        .setFooter({ text: 'Son güncelleme' })
+        .setTimestamp();
+    return embed;
 }
 
 export async function execute(interaction) {
@@ -262,52 +281,48 @@ export async function execute(interaction) {
                 `🔄 Son güncelleme: <t:${Math.floor(Date.now() / 1000)}:R>`
             ].join('\n'));
 
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId(`detayli~${serverChoice}~0`)
-                .setLabel('Detaylı Sorgu')
-                .setStyle(ButtonStyle.Secondary)
-                .setEmoji('🔎')
-        );
+        const playersForSelect = await getCachedPlayerList(serverChoice);
+        const [selectRow, navRow] = playersForSelect && playersForSelect.length > 0
+            ? buildMainComponents(serverChoice, playersForSelect, 0)
+            : [null, null];
 
-        const reply = await interaction.editReply({ embeds: [embed], components: [row] });
+        const components = [];
+        if (selectRow) components.push(selectRow);
+        if (navRow) components.push(navRow);
+
+        const reply = await interaction.editReply({ embeds: [embed], components });
 
         const filter = i => i.user.id === interaction.user.id && i.message.id === reply.id;
         const collector = reply.createMessageComponentCollector({ filter, time: 120000 });
 
         collector.on('collect', async (i) => {
-            const [action, key, pageStr] = i.customId.split('~');
-            const currentPage = parseInt(pageStr) || 0;
-
-            if (action === 'detayli') {
-                await i.deferUpdate();
-                const rawPlayers = await getDetailedPlayerList(key);
-                if (!rawPlayers || rawPlayers.length === 0) {
-                    await i.editReply({ content: 'Oyuncu verisi alınamadı.', embeds: [], components: [] });
-                    return;
+            if (i.isStringSelectMenu()) {
+                const selectedValue = i.values[0];
+                const rawPlayers = await getCachedPlayerList(serverChoice);
+                const player = rawPlayers?.find(p => String(p.id) === selectedValue);
+                if (player) {
+                    const detailEmbed = buildPlayerDetailEmbed(displayName, player);
+                    await i.reply({ embeds: [detailEmbed], ephemeral: true });
+                } else {
+                    await i.reply({ content: 'Oyuncu bulunamadı.', ephemeral: true });
                 }
-                const totalPages = Math.ceil(rawPlayers.length / 5) || 1;
-                const detailEmbed = buildDetailedEmbed(key, rawPlayers, 0, 5);
-                const detailBtns = buildDetailButtons(key, 0, totalPages);
-                await i.editReply({ embeds: [detailEmbed], components: [detailBtns] });
                 return;
             }
 
-            await i.deferUpdate();
-            const rawPlayers = await getDetailedPlayerList(key);
+            const [action, key, pageStr] = i.customId.split('~');
+            let newPage = parseInt(pageStr) || 0;
+
+            const rawPlayers = await getCachedPlayerList(key, action === 'refresh');
             if (!rawPlayers || rawPlayers.length === 0) {
-                await i.editReply({ content: 'Oyuncu verisi alınamadı.', embeds: [], components: [] });
+                await i.update({ content: 'Oyuncu verisi alınamadı.', embeds: [], components: [] });
                 return;
             }
 
-            let newPage = currentPage;
-            if (action === 'prev') newPage = Math.max(0, currentPage - 1);
-            if (action === 'next') newPage = currentPage + 1;
+            if (action === 'prev') newPage = Math.max(0, newPage - 1);
+            else if (action === 'next') newPage = Math.min(newPage + 1, Math.ceil(rawPlayers.length / 25) - 1);
 
-            const totalPages = Math.ceil(rawPlayers.length / 5) || 1;
-            const detailEmbed = buildDetailedEmbed(key, rawPlayers, newPage, 5);
-            const detailBtns = buildDetailButtons(key, newPage, totalPages);
-            await i.editReply({ embeds: [detailEmbed], components: [detailBtns] });
+            const [newSelectRow, newNavRow] = buildMainComponents(key, rawPlayers, newPage);
+            await i.update({ embeds: [embed], components: [newSelectRow, newNavRow] });
         });
 
         collector.on('end', () => {
