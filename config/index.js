@@ -14,13 +14,9 @@ const config = {
     allowedRoles: process.env.ALLOWED_ROLES
         ? process.env.ALLOWED_ROLES.split(',').map(r => r.trim())
         : (fileConfig.allowedRoles || []),
-    voiceChannelId: process.env.VOICE_CHANNEL_ID || fileConfig.voiceChannelId,
     ticketPanelChannelId: process.env.TICKET_PANEL_CHANNEL_ID || fileConfig.ticketPanelChannelId,
     ticketCategoryId: process.env.TICKET_CATEGORY_ID || fileConfig.ticketCategoryId,
-    ticketImageUrl: process.env.TICKET_IMAGE_URL || fileConfig.ticketImageUrl,
-    fivemServers: process.env.FIVEM_SERVERS
-        ? JSON.parse(process.env.FIVEM_SERVERS)
-        : (fileConfig.fivemServers || {})
+    ticketImageUrl: process.env.TICKET_IMAGE_URL || fileConfig.ticketImageUrl
 };
 
 export default config;

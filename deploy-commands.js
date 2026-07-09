@@ -57,13 +57,7 @@ const commands = [
                 .addChoices(
                     { name: 'Well', value: 'well' },
                     { name: 'Alesta Rp', value: 'alesta_rp' },
-                    { name: 'Guid Pvp', value: 'guid_pvp' },
-                    { name: 'Z-Group FreeRoam', value: 'zgroup_freeroam' },
-                    { name: 'Welcome to LS', value: 'wtls' },
-                    { name: 'Welcome to LS 2', value: 'wtls_2' },
-                    { name: 'CGN Network', value: 'cgn_network' },
-                    { name: 'Slax RP', value: 'slax_rp' },
-                    { name: 'Transport Tycoon', value: 'transport_tycoon' }
+                    { name: 'Guid Pvp', value: 'guid_pvp' }
                 )
                 .setRequired(true)),
 
@@ -76,18 +70,20 @@ const commands = [
                 .addChoices(
                     { name: 'Well', value: 'well' },
                     { name: 'Alesta Rp', value: 'alesta_rp' },
-                    { name: 'Guid Pvp', value: 'guid_pvp' },
-                    { name: 'Z-Group FreeRoam', value: 'zgroup_freeroam' },
-                    { name: 'Welcome to LS', value: 'wtls' },
-                    { name: 'Welcome to LS 2', value: 'wtls_2' },
-                    { name: 'CGN Network', value: 'cgn_network' },
-                    { name: 'Slax RP', value: 'slax_rp' },
-                    { name: 'Transport Tycoon', value: 'transport_tycoon' }
+                    { name: 'Guid Pvp', value: 'guid_pvp' }
                 )
                 .setRequired(true))
         .addIntegerOption(option =>
             option.setName('id')
                 .setDescription('Oyuncu ID')
+                .setRequired(true)),
+
+    new SlashCommandBuilder()
+        .setName('tag')
+        .setDescription('Tüm sunucularda FiveM isminde etiket arar')
+        .addStringOption(option =>
+            option.setName('isim')
+                .setDescription('Aratılacak isim/etiket')
                 .setRequired(true))
 ];
 
@@ -95,12 +91,7 @@ const rest = new REST({ version: '10' }).setToken(config.token);
 
 try {
     console.log('Komutlar kaydediliyor...');
-
-    await rest.put(
-        Routes.applicationGuildCommands(config.clientId, config.guildId),
-        { body: commands.map(cmd => cmd.toJSON()) }
-    );
-
+    await rest.put(Routes.applicationCommands(config.clientId), { body: commands.map(cmd => cmd.toJSON()) });
     console.log('Komutlar başarıyla kaydedildi!');
 } catch (error) {
     console.error('Komut kaydedilirken hata:', error);
