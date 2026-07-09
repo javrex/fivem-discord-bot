@@ -1,4 +1,4 @@
-import { EmbedBuilder } from 'discord.js';
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { GameDig } from 'gamedig';
 
 const KNOWN_SERVERS = {
@@ -116,6 +116,80 @@ async function queryCfxAPI(joinCode) {
     }
 }
 
+async function getDetailedPlayerList(serverKey) {
+    const cfxCode = CFX_SERVERS[serverKey];
+    if (cfxCode) {
+        try {
+            const res = await fetch(`https://frontend.cfx-services.net/api/servers/single/${cfxCode}`, {
+                signal: AbortSignal.timeout(5000),
+                headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+            });
+            if (!res.ok) return null;
+            const data = await res.json();
+            return data.Data?.players || null;
+        } catch {
+            return null;
+        }
+    }
+    const address = KNOWN_SERVERS[serverKey];
+    if (!address) return null;
+    const { host, port } = parseAddress(address);
+    const result = await queryServer(host, port);
+    return result?.players || null;
+}
+
+function formatPlayerDetailed(p) {
+    const discordId = (p.identifiers || []).find(id => id.startsWith('discord:'));
+    return [
+        `👤 **${escapeMD(p.name || 'İsimsiz')}**`,
+        `🆔 Server ID: \`${typeof p.id === 'number' ? p.id : 0}\``,
+        discordId ? `💬 Discord: \`${discordId.replace('discord:', '')}\`` : `💬 Discord: Bulunamadı`,
+        `📶 Ping: \`${p.ping || '?'}ms\``,
+    ].join('\n');
+}
+
+function buildDetailedEmbed(serverKey, players, page, perPage = 5) {
+    const displayName = serverKey.charAt(0).toUpperCase() + serverKey.slice(1).replace(/_/g, ' ');
+    const totalPages = Math.ceil(players.length / perPage) || 1;
+    const start = page * perPage;
+    const pagePlayers = players.slice(start, start + perPage);
+    const embed = new EmbedBuilder()
+        .setColor(0x2b2d31)
+        .setTitle(`🔎 ${displayName} — Detaylı Sorgu`)
+        .setDescription(pagePlayers.length > 0 ? pagePlayers.map(formatPlayerDetailed).join('\n\n') : 'Oyuncu bulunamadı.')
+        .setFooter({ text: `Sayfa ${page + 1}/${totalPages} • ${players.length} oyuncu` })
+        .setTimestamp();
+    return embed;
+}
+
+function buildDetailButtons(serverKey, page, totalPages) {
+    const row = new ActionRowBuilder();
+    if (totalPages > 1) {
+        row.addComponents(
+            new ButtonBuilder()
+                .setCustomId(`prev~${serverKey}~${page}`)
+                .setLabel('Önceki Sayfa')
+                .setStyle(ButtonStyle.Secondary)
+                .setEmoji('⬅')
+                .setDisabled(page === 0),
+            new ButtonBuilder()
+                .setCustomId(`next~${serverKey}~${page}`)
+                .setLabel('Sonraki Sayfa')
+                .setStyle(ButtonStyle.Secondary)
+                .setEmoji('➡')
+                .setDisabled(page >= totalPages - 1),
+        );
+    }
+    row.addComponents(
+        new ButtonBuilder()
+            .setCustomId(`refresh~${serverKey}~${page}`)
+            .setLabel('Yenile')
+            .setStyle(ButtonStyle.Primary)
+            .setEmoji('🔄')
+    );
+    return row;
+}
+
 export async function execute(interaction) {
     await interaction.deferReply();
 
@@ -188,7 +262,57 @@ export async function execute(interaction) {
                 `🔄 Son güncelleme: <t:${Math.floor(Date.now() / 1000)}:R>`
             ].join('\n'));
 
-        await interaction.editReply({ embeds: [embed] });
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`detayli~${serverChoice}~0`)
+                .setLabel('Detaylı Sorgu')
+                .setStyle(ButtonStyle.Secondary)
+                .setEmoji('🔎')
+        );
+
+        const reply = await interaction.editReply({ embeds: [embed], components: [row] });
+
+        const filter = i => i.user.id === interaction.user.id && i.message.id === reply.id;
+        const collector = reply.createMessageComponentCollector({ filter, time: 120000 });
+
+        collector.on('collect', async (i) => {
+            const [action, key, pageStr] = i.customId.split('~');
+            const currentPage = parseInt(pageStr) || 0;
+
+            if (action === 'detayli') {
+                await i.deferUpdate();
+                const rawPlayers = await getDetailedPlayerList(key);
+                if (!rawPlayers || rawPlayers.length === 0) {
+                    await i.editReply({ content: 'Oyuncu verisi alınamadı.', embeds: [], components: [] });
+                    return;
+                }
+                const totalPages = Math.ceil(rawPlayers.length / 5) || 1;
+                const detailEmbed = buildDetailedEmbed(key, rawPlayers, 0, 5);
+                const detailBtns = buildDetailButtons(key, 0, totalPages);
+                await i.editReply({ embeds: [detailEmbed], components: [detailBtns] });
+                return;
+            }
+
+            await i.deferUpdate();
+            const rawPlayers = await getDetailedPlayerList(key);
+            if (!rawPlayers || rawPlayers.length === 0) {
+                await i.editReply({ content: 'Oyuncu verisi alınamadı.', embeds: [], components: [] });
+                return;
+            }
+
+            let newPage = currentPage;
+            if (action === 'prev') newPage = Math.max(0, currentPage - 1);
+            if (action === 'next') newPage = currentPage + 1;
+
+            const totalPages = Math.ceil(rawPlayers.length / 5) || 1;
+            const detailEmbed = buildDetailedEmbed(key, rawPlayers, newPage, 5);
+            const detailBtns = buildDetailButtons(key, newPage, totalPages);
+            await i.editReply({ embeds: [detailEmbed], components: [detailBtns] });
+        });
+
+        collector.on('end', () => {
+            interaction.editReply({ components: [] }).catch(() => {});
+        });
     } catch (error) {
         await interaction.editReply({ content: `Hata: ${error.message}` }).catch(() => {});
     }
