@@ -92,8 +92,25 @@ const rest = new REST({ version: '10' }).setToken(config.token);
 
 try {
     console.log('Komutlar kaydediliyor...');
-    await rest.put(Routes.applicationCommands(config.clientId), { body: commands.map(cmd => cmd.toJSON()) });
-    console.log('Komutlar başarıyla kaydedildi!');
+
+    const json = commands.map(cmd => cmd.toJSON());
+
+    // Önce eski guild komutlarını temizle
+    if (config.guildId) {
+        await rest.put(Routes.applicationGuildCommands(config.clientId, config.guildId), { body: [] });
+        console.log('Eski guild komutları temizlendi.');
+    }
+
+    // Yeni komutları kaydet (önce guild, sonra global)
+    if (config.guildId) {
+        await rest.put(Routes.applicationGuildCommands(config.clientId, config.guildId), { body: json });
+        console.log('Guild komutları kaydedildi.');
+    }
+
+    await rest.put(Routes.applicationCommands(config.clientId), { body: json });
+    console.log('Global komutlar kaydedildi.');
+
+    console.log('Tüm komutlar başarıyla kaydedildi!');
 } catch (error) {
     console.error('Komut kaydedilirken hata:', error);
 }
