@@ -7,6 +7,10 @@ const KNOWN_SERVERS = {
     'guid_pvp': '141.98.50.34'
 };
 
+const CFX_SERVERS = {
+    'md_rp': 'xjx5kr'
+};
+
 function escapeMD(text) {
     return String(text).replace(/[_*~`|>]/g, '\\$&');
 }
@@ -16,8 +20,8 @@ async function getPlayers(host, port) {
         const state = await GameDig.query({
             type: 'gta5f',
             host, port: parseInt(port),
-            socketTimeout: 3000,
-            attemptTimeout: 3000,
+            socketTimeout: 2000,
+            attemptTimeout: 2000,
             maxAttempts: 1
         });
         return (state.players || []).map(p => ({
@@ -28,7 +32,7 @@ async function getPlayers(host, port) {
     } catch {
         try {
             const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 4000);
+            const timer = setTimeout(() => controller.abort(), 3000);
             const res = await fetch(`http://${host}:${port}/players.json`, { signal: controller.signal });
             clearTimeout(timer);
             if (res.ok) {
@@ -40,33 +44,61 @@ async function getPlayers(host, port) {
     }
 }
 
+async function getPlayersFromCfx(joinCode) {
+    try {
+        const res = await fetch(`https://frontend.cfx-services.net/api/servers/single/${joinCode}`, {
+            signal: AbortSignal.timeout(5000),
+            headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+        });
+        if (!res.ok) return [];
+        const data = await res.json();
+        if (!data.Data || !data.Data.players) return [];
+        return data.Data.players.map(p => ({
+            id: typeof p.id === 'number' ? p.id : 0,
+            name: p.name || 'İsimsiz',
+            ping: p.ping || 0
+        }));
+    } catch {
+        return [];
+    }
+}
+
 export async function execute(interaction) {
     const search = interaction.options.getString('isim').toLowerCase();
 
     await interaction.reply({ content: '🔍 Aranıyor...' });
 
-    const embeds = [];
+    const queries = [];
 
     for (const [key, address] of Object.entries(KNOWN_SERVERS)) {
         const parts = address.split(':');
-        const host = parts[0];
-        const port = parts[1] || '30120';
-        const displayName = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+        queries.push({ key, host: parts[0], port: parts[1] || '30120', type: 'normal' });
+    }
 
-        const players = await getPlayers(host, port);
+    for (const [key, code] of Object.entries(CFX_SERVERS)) {
+        queries.push({ key, code, type: 'cfx' });
+    }
+
+    const results = await Promise.all(queries.map(async (q) => {
+        const displayName = q.key.charAt(0).toUpperCase() + q.key.slice(1).replace(/_/g, ' ');
+        const players = q.type === 'cfx' ? await getPlayersFromCfx(q.code) : await getPlayers(q.host, q.port);
         const matched = players.filter(p => p.name && p.name.toLowerCase().includes(search));
-        if (matched.length === 0) continue;
+        return { displayName, matched, host: q.code || q.host, port: q.type === 'cfx' ? '' : q.port, isCfx: q.type === 'cfx', code: q.code };
+    }));
 
-        const lines = matched.map(p => {
+    const embeds = [];
+
+    for (const r of results) {
+        if (r.matched.length === 0) continue;
+        const lines = r.matched.map(p => {
             const name = escapeMD(p.name || 'İsimsiz');
             return `\`#${String(p.id).padEnd(3)}\` ${name} — \`${p.ping || '?'}ms\``;
         });
-
         embeds.push(new EmbedBuilder()
             .setColor(0x9b59b6)
-            .setTitle(`${displayName} — ${matched.length} oyuncu`)
+            .setTitle(`${r.displayName} — ${r.matched.length} oyuncu`)
             .setDescription(lines.join('\n'))
-            .setFooter({ text: `${host}:${port}` })
+            .setFooter({ text: r.isCfx ? `cfx.re/join/${r.code}` : `${r.host}:${r.port}` })
             .setTimestamp());
     }
 
