@@ -168,24 +168,25 @@ export async function execute(interaction) {
             : playerCount < (maxVal || 100) * 0.8 ? 0xfdcb6e
             : 0xd63031;
 
-        let descLines = [`${bar}  **${playerCount} / ${result.maxClients}**`];
-        if (lines.length > 0) {
-            descLines.push('');
-            descLines = descLines.concat(lines);
-        }
-        if (playerCount > maxShow) {
-            descLines.push(`*+${playerCount - maxShow} oyuncu daha listelenemedi*`);
-        }
-        if (playerCount === 0) {
-            descLines.push('Sunucuda aktif oyuncu bulunmuyor.');
-        }
-
         const embed = new EmbedBuilder()
             .setColor(color)
-            .setTitle(displayName)
-            .setDescription(descLines.join('\n'))
-            .setFooter({ text: isCfx ? `cfx.re/join/${cfxCode}` : `${host}:${port}` })
-            .setTimestamp();
+            .setDescription([
+                `╔════════════════════╗`,
+                `     🎮 ${displayName}`,
+                `╚════════════════════╝`,
+                '',
+                `🟢 **${playerCount > 0 ? 'Çevrimiçi' : 'Boş'}**`,
+                `👥 **${playerCount}** / ${result.maxClients}`,
+                `🌐 ${isCfx ? `cfx.re/join/${cfxCode}` : `${host}:${port}`}`,
+                '',
+                ...(lines.length > 0
+                    ? [`${bar}`, '', ...lines]
+                    : ['Sunucuda aktif oyuncu bulunmuyor.']),
+                ...(playerCount > maxShow ? [`*+${playerCount - maxShow} oyuncu daha*`] : []),
+                '',
+                `────────────`,
+                `🔄 Son güncelleme: <t:${Math.floor(Date.now() / 1000)}:R>`
+            ].join('\n'));
 
         await interaction.editReply({ embeds: [embed] });
     } catch (error) {
