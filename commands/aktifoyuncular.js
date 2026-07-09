@@ -94,7 +94,7 @@ async function queryServer(host, port) {
 async function queryCfxAPI(joinCode) {
     try {
         const res = await fetch(`https://frontend.cfx-services.net/api/servers/single/${joinCode}`, {
-            signal: AbortSignal.timeout(8000),
+            signal: AbortSignal.timeout(5000),
             headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
         });
         if (!res.ok) return null;
@@ -134,16 +134,14 @@ export async function execute(interaction) {
         let port = parsed.port;
         let cfxCode = CFX_SERVERS[serverChoice];
 
-        // 1. Try A2S/HTTP directly (existing method)
-        let result = await queryServer(host, port);
+        // Cfx.re'de kayıtlı sunucular doğrudan Cfx.re API'den sorgulanır
+        let result = cfxCode
+            ? await queryCfxAPI(cfxCode)
+            : await queryServer(host, port);
 
-        // 2. If direct query fails and server has Cfx.re code, try Cfx.re API
-        if (!result && cfxCode) {
-            result = await queryCfxAPI(cfxCode);
-            if (result) {
-                host = cfxCode;
-                port = '';
-            }
+        if (result && cfxCode) {
+            host = cfxCode;
+            port = '';
         }
 
         if (!result) {
