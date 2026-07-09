@@ -8,6 +8,10 @@ const KNOWN_SERVERS = {
     'md_rp': '185.29.166.7'
 };
 
+const CFX_SERVERS = {
+    'md_rp': 'xjx5kr'
+};
+
 function parseAddress(value) {
     const parts = value.split(':');
     return { host: parts[0], port: parts[1] || '30120' };
@@ -87,6 +91,31 @@ async function queryServer(host, port) {
     return result;
 }
 
+async function queryCfxAPI(joinCode) {
+    try {
+        const res = await fetch(`https://frontend.cfx-services.net/api/servers/single/${joinCode}`, {
+            signal: AbortSignal.timeout(8000),
+            headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (!data.Data) return null;
+        const players = (data.Data.players || []).map(p => ({
+            id: typeof p.id === 'number' ? p.id : 0,
+            name: p.name || 'İsimsiz',
+            ping: p.ping || 0
+        }));
+        return {
+            hostname: data.Data.hostname || joinCode,
+            clients: data.Data.clients || players.length,
+            maxClients: data.Data.svMaxclients || data.Data.sv_maxclients || '?',
+            players
+        };
+    } catch {
+        return null;
+    }
+}
+
 export async function execute(interaction) {
     await interaction.deferReply();
 
@@ -99,12 +128,29 @@ export async function execute(interaction) {
         }
 
         const displayName = serverChoice.charAt(0).toUpperCase() + serverChoice.slice(1).replace(/_/g, ' ');
-        const { host, port } = parseAddress(address);
 
-        const result = await queryServer(host, port);
+        const parsed = parseAddress(address);
+        let host = parsed.host;
+        let port = parsed.port;
+        let cfxCode = CFX_SERVERS[serverChoice];
+
+        // 1. Try A2S/HTTP directly (existing method)
+        let result = await queryServer(host, port);
+
+        // 2. If direct query fails and server has Cfx.re code, try Cfx.re API
+        if (!result && cfxCode) {
+            result = await queryCfxAPI(cfxCode);
+            if (result) {
+                host = cfxCode;
+                port = '';
+            }
+        }
+
         if (!result) {
             return interaction.editReply({ content: `${displayName} sunucusuna erişilemedi.` });
         }
+
+        const isCfx = cfxCode && !port;
 
         const players = Array.isArray(result.players) ? result.players : [];
         const playerCount = players.length;
@@ -140,7 +186,7 @@ export async function execute(interaction) {
             .setColor(color)
             .setTitle(displayName)
             .setDescription(descLines.join('\n'))
-            .setFooter({ text: `${host}:${port}` })
+            .setFooter({ text: isCfx ? `cfx.re/join/${cfxCode}` : `${host}:${port}` })
             .setTimestamp();
 
         await interaction.editReply({ embeds: [embed] });
