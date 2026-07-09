@@ -1,4 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
+import { GameDig } from 'gamedig';
 
 const KNOWN_SERVERS = {
     'well': '5.231.120.202',
@@ -22,13 +23,57 @@ function makeBar(current, max, length = 8) {
     return '🟩'.repeat(Math.min(filled, length)) + '⬜'.repeat(Math.max(length - filled, 0));
 }
 
-async function fetchJSON(url) {
+async function queryA2S(host, port) {
+    try {
+        const state = await GameDig.query({
+            type: 'gta5f',
+            host, port: parseInt(port),
+            socketTimeout: 3000,
+            attemptTimeout: 3000,
+            maxAttempts: 1
+        });
+        const players = (state.players || []).map(p => ({
+            id: typeof p.id === 'number' ? p.id : 0,
+            name: p.name || 'İsimsiz',
+            ping: p.ping || 0
+        }));
+        return {
+            hostname: state.name || host,
+            clients: players.length,
+            maxClients: state.maxplayers || '?',
+            players
+        };
+    } catch {
+        return null;
+    }
+}
+
+async function queryHTTP(host, port) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 5000);
     try {
-        const res = await fetch(url, { signal: controller.signal });
-        if (!res.ok) return null;
-        return await res.json();
+        const [infoRes, playersRes] = await Promise.all([
+            fetch(`http://${host}:${port}/info.json`, { signal: controller.signal }).catch(() => null),
+            fetch(`http://${host}:${port}/players.json`, { signal: controller.signal }).catch(() => null)
+        ]);
+
+        if ((!infoRes || !infoRes.ok) && (!playersRes || !playersRes.ok)) return null;
+
+        let info = {};
+        let players = [];
+
+        if (infoRes && infoRes.ok) {
+            try { info = await infoRes.json(); } catch {}
+        }
+        if (playersRes && playersRes.ok) {
+            try { players = await playersRes.json(); } catch {}
+        }
+
+        const hostname = info.vars?.sv_hostname || info.vars?.sv_projectName || info.hostname || host;
+        const clients = typeof info.clients === 'number' ? info.clients : (Array.isArray(players) ? players.length : 0);
+        const maxClients = info.vars?.sv_maxClients || info.vars?.sv_maxclients || info.svMaxclients || '?';
+
+        return { hostname, clients, maxClients, players: Array.isArray(players) ? players : [] };
     } catch {
         return null;
     } finally {
@@ -37,18 +82,9 @@ async function fetchJSON(url) {
 }
 
 async function queryServer(host, port) {
-    const [info, players] = await Promise.all([
-        fetchJSON(`http://${host}:${port}/info.json`),
-        fetchJSON(`http://${host}:${port}/players.json`)
-    ]);
-
-    if (!info && !players) return null;
-
-    const hostname = info?.vars?.sv_hostname || info?.vars?.sv_projectName || info?.hostname || host;
-    const clients = typeof info?.clients === 'number' ? info.clients : (Array.isArray(players) ? players.length : 0);
-    const maxClients = info?.vars?.sv_maxClients || info?.vars?.sv_maxclients || info?.svMaxclients || '?';
-
-    return { hostname, clients, maxClients, players: Array.isArray(players) ? players : [] };
+    let result = await queryA2S(host, port);
+    if (!result) result = await queryHTTP(host, port);
+    return result;
 }
 
 export async function execute(interaction) {
