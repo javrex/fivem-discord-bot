@@ -3,12 +3,14 @@ import { EmbedBuilder } from 'discord.js';
 const KNOWN_SERVERS = {
     'well': '5.231.120.202',
     'alesta_rp': 'alestarp.com',
-    'guid_pvp': '141.98.50.34'
+    'guid_pvp': '141.98.50.34',
+    'md_pvp': '46.203.182.30'
 };
 
 const CFX_SERVERS = {
     'md_rp': 'xjx5kr',
-    'alesta_rp': 'gm3g4q'
+    'alesta_rp': 'gm3g4q',
+    'md_pvp': 'z5gxl9'
 };
 
 function escapeMD(text) {
