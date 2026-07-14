@@ -9,7 +9,8 @@ const KNOWN_SERVERS = {
 };
 
 const CFX_SERVERS = {
-    'md_rp': 'xjx5kr'
+    'md_rp': 'xjx5kr',
+    'alesta_rp': 'gm3g4q'
 };
 
 function parseAddress(value) {
