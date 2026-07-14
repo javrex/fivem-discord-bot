@@ -6,11 +6,16 @@ const KNOWN_SERVERS = {
     'guid_pvp': '141.98.50.34'
 };
 
+const CFX_SERVERS = {
+    'md_rp': 'xjx5kr',
+    'alesta_rp': 'gm3g4q'
+};
+
 function escapeMD(text) {
     return String(text).replace(/[_*~`|>]/g, '\\$&');
 }
 
-async function fetchPlayers(host, port) {
+async function fetchPlayersHTTP(host, port) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 5000);
     try {
@@ -25,31 +30,51 @@ async function fetchPlayers(host, port) {
     }
 }
 
+async function fetchPlayersCfx(joinCode) {
+    try {
+        const res = await fetch(`https://frontend.cfx-services.net/api/servers/single/${joinCode}`, {
+            signal: AbortSignal.timeout(5000),
+            headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.Data?.players || null;
+    } catch {
+        return null;
+    }
+}
+
 export async function execute(interaction) {
     await interaction.deferReply();
 
     try {
         const serverChoice = interaction.options.getString('server');
         const playerId = interaction.options.getInteger('id');
-        const address = KNOWN_SERVERS[serverChoice];
+        const cfxCode = CFX_SERVERS[serverChoice];
 
-        if (!address) {
-            return interaction.editReply({ content: 'Sunucu bulunamadı.' });
+        let players;
+        if (cfxCode) {
+            players = await fetchPlayersCfx(cfxCode);
+        } else {
+            const address = KNOWN_SERVERS[serverChoice];
+            if (!address) {
+                return interaction.editReply({ content: 'Sunucu bulunamadı.' });
+            }
+            const parts = address.split(':');
+            const host = parts[0];
+            const port = parts[1] || '30120';
+            players = await fetchPlayersHTTP(host, port);
         }
 
-        const parts = address.split(':');
-        const host = parts[0];
-        const port = parts[1] || '30120';
-        const displayName = serverChoice.charAt(0).toUpperCase() + serverChoice.slice(1).replace(/_/g, ' ');
-
-        const players = await fetchPlayers(host, port);
         if (!players) {
-            return interaction.editReply({ content: `${displayName} sunucusuna erişilemedi.` });
+            return interaction.editReply({ content: `${serverChoice} sunucusuna erişilemedi.` });
         }
 
         if (players.length === 0) {
             return interaction.editReply({ content: 'Sunucuda hiç oyuncu yok.' });
         }
+
+        const displayName = serverChoice.charAt(0).toUpperCase() + serverChoice.slice(1).replace(/_/g, ' ');
 
         const player = players.find(p => p.id === playerId);
 
@@ -62,6 +87,7 @@ export async function execute(interaction) {
         const discordId = (player.identifiers || []).find(i => i.startsWith('discord:'));
         const steamId = (player.identifiers || []).find(i => i.startsWith('steam:'));
 
+        const address = cfxCode ? `cfx.re/join/${cfxCode}` : KNOWN_SERVERS[serverChoice] || '';
         const embed = new EmbedBuilder()
             .setColor(0x2d3436)
             .setTitle('Oyuncu Bilgisi')
