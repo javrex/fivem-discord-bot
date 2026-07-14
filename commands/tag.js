@@ -11,7 +11,8 @@ const CFX_SERVERS = {
     'md_rp': 'xjx5kr',
     'alesta_rp': 'gm3g4q',
     'md_pvp': 'z5gxl9',
-    'pwuc_rp': 'bdxpkrp'
+    'pwuc_rp': 'bdxpkrp',
+    'ria_rp': 'zjvqmgd'
 };
 
 function escapeMD(text) {

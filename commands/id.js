@@ -5,14 +5,16 @@ const KNOWN_SERVERS = {
     'alesta_rp': 'alestarp.com',
     'guid_pvp': '141.98.50.34',
     'md_pvp': '46.203.182.30',
-    'pwuc_rp': '46.203.182.73'
+    'pwuc_rp': '46.203.182.73',
+    'ria_rp': '46.203.182.178'
 };
 
 const CFX_SERVERS = {
     'md_rp': 'xjx5kr',
     'alesta_rp': 'gm3g4q',
     'md_pvp': 'z5gxl9',
-    'pwuc_rp': 'bdxpkrp'
+    'pwuc_rp': 'bdxpkrp',
+    'ria_rp': 'zjvqmgd'
 };
 
 function escapeMD(text) {
