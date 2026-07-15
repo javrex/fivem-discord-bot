@@ -32,7 +32,7 @@ function save() {
     writeFileSync(DATA_FILE, JSON.stringify(cache, null, 2));
 }
 
-export function addTakip(guildId, playerName, addedBy) {
+export function addTakip(guildId, playerName, addedBy, channelId) {
     const data = load();
     const key = playerName.toLowerCase();
     if (!data[guildId]) data[guildId] = {};
@@ -40,6 +40,7 @@ export function addTakip(guildId, playerName, addedBy) {
     data[guildId][key] = {
         player_name: playerName,
         added_by: addedBy,
+        channel_id: channelId,
         added_at: new Date().toISOString()
     };
     save();

@@ -1,3 +1,4 @@
+import { PermissionFlagsBits } from 'discord.js';
 import { getAllTrackedPlayers } from './takipStore.js';
 
 const CFX_SERVERS = {
@@ -43,12 +44,23 @@ async function sendNotification(client, trackEntry, serverKey, serverId, ping) {
     const now = new Date();
     const dateStr = now.toLocaleDateString('tr-TR') + ' ' + now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 
+    if (!trackEntry.channel_id) return;
+
     try {
-        const user = await client.users.fetch(trackEntry.added_by);
-        await user.send({
+        const channel = await client.channels.fetch(trackEntry.channel_id);
+        if (!channel) return;
+
+        const me = channel.guild.members.me || await channel.guild.members.fetch(client.user.id);
+        const perms = channel.permissionsFor(me);
+        if (!perms || !perms.has(PermissionFlagsBits.ViewChannel) || !perms.has(PermissionFlagsBits.SendMessages) || !perms.has(PermissionFlagsBits.EmbedLinks)) {
+            return;
+        }
+
+        await channel.send({
+            content: `<@${trackEntry.added_by}>`,
             embeds: [{
                 color: 0x00ff88,
-                title: '🚨 Takip Ettiğin Oyuncu Çevrimiçi!',
+                title: '🚨 Takip Edilen Oyuncu Çevrimiçi!',
                 fields: [
                     { name: '👤 Oyuncu', value: trackEntry.player_name, inline: false },
                     { name: '🎮 Sunucu', value: displayName, inline: true },
@@ -60,7 +72,7 @@ async function sendNotification(client, trackEntry, serverKey, serverId, ping) {
             }]
         });
     } catch {
-        // DM kapalı veya kullanıcı bulunamadı, sessizce geç
+        // kanal silinmiş, botun izni yok veya başka hata — sessizce geç
     }
 }
 

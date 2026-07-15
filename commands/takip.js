@@ -15,7 +15,7 @@ async function handleEkle(interaction) {
         return interaction.reply({ content: 'Geçerli bir oyuncu adı girin.', ephemeral: true });
     }
 
-    const added = addTakip(interaction.guildId, playerName, interaction.user.id);
+    const added = addTakip(interaction.guildId, playerName, interaction.user.id, interaction.channel.id);
     if (!added) {
         return interaction.reply({
             content: `**${playerName}** zaten takip listende bulunuyor.`,
@@ -24,7 +24,7 @@ async function handleEkle(interaction) {
     }
 
     await interaction.reply({
-        content: `✅ **${playerName}** takip listene eklendi. Oyuncu herhangi bir sunucuda görüldüğünde sana DM üzerinden bildirim gönderilecek.`,
+        content: `✅ **${playerName}** takip listene eklendi. Oyuncu herhangi bir sunucuda görüldüğünde <#${interaction.channel.id}> kanalına bildirim gönderilecek.`,
         ephemeral: true
     });
 }
@@ -75,12 +75,13 @@ async function handleListe(interaction, client) {
             addedBy = user.tag;
         } catch {}
 
+        const channelInfo = entry.channel_id ? `<#${entry.channel_id}>` : 'Bilinmiyor';
         const date = new Date(entry.added_at);
         const dateStr = date.toLocaleDateString('tr-TR') + ' ' + date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 
         fields.push({
             name: `👤 ${entry.player_name}`,
-            value: `Ekleyen: ${addedBy}\nTarih: ${dateStr}`,
+            value: `Ekleyen: ${addedBy}\nKanal: ${channelInfo}\nTarih: ${dateStr}`,
             inline: false
         });
     }
