@@ -117,6 +117,27 @@ const commands = [
             option.setName('kullanici')
                 .setDescription('Profilini görmek istediğiniz kullanıcı')
                 .setRequired(false)),
+
+    new SlashCommandBuilder()
+        .setName('takip')
+        .setDescription('Oyuncu takip sistemi')
+        .addSubcommand(sub =>
+            sub.setName('ekle')
+                .setDescription('Bir oyuncuyu takibe ekle')
+                .addStringOption(opt =>
+                    opt.setName('oyuncuadı')
+                        .setDescription('Takip edilecek oyuncu adı')
+                        .setRequired(true)))
+        .addSubcommand(sub =>
+            sub.setName('sil')
+                .setDescription('Bir oyuncunun takibini kaldır')
+                .addStringOption(opt =>
+                    opt.setName('oyuncuadı')
+                        .setDescription('Takibi kaldırılacak oyuncu adı')
+                        .setRequired(true)))
+        .addSubcommand(sub =>
+            sub.setName('liste')
+                .setDescription('Takip edilen oyuncuları göster')),
 ];
 
 const rest = new REST({ version: '10' }).setToken(config.token);
