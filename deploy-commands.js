@@ -119,6 +119,36 @@ const commands = [
                 .setRequired(false)),
 
     new SlashCommandBuilder()
+        .setName('karşılaştır')
+        .setDescription('İki FiveM sunucusunu karşılaştır')
+        .addStringOption(option =>
+            option.setName('sunucu1')
+                .setDescription('Birinci sunucu')
+                .addChoices(
+                    { name: 'Well', value: 'well' },
+                    { name: 'Alesta Rp', value: 'alesta_rp' },
+                    { name: 'Guid Pvp', value: 'guid_pvp' },
+                    { name: 'MD Rp', value: 'md_rp' },
+                    { name: 'MD PvP', value: 'md_pvp' },
+                    { name: 'PWUC Rp', value: 'pwuc_rp' },
+                    { name: 'Ria RP', value: 'ria_rp' }
+                )
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('sunucu2')
+                .setDescription('İkinci sunucu')
+                .addChoices(
+                    { name: 'Well', value: 'well' },
+                    { name: 'Alesta Rp', value: 'alesta_rp' },
+                    { name: 'Guid Pvp', value: 'guid_pvp' },
+                    { name: 'MD Rp', value: 'md_rp' },
+                    { name: 'MD PvP', value: 'md_pvp' },
+                    { name: 'PWUC Rp', value: 'pwuc_rp' },
+                    { name: 'Ria RP', value: 'ria_rp' }
+                )
+                .setRequired(true)),
+
+    new SlashCommandBuilder()
         .setName('takip')
         .setDescription('Oyuncu takip sistemi')
         .addSubcommand(sub =>
