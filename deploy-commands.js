@@ -149,6 +149,10 @@ const commands = [
                 .setRequired(true)),
 
     new SlashCommandBuilder()
+        .setName('sunuculog')
+        .setDescription('Sunucu moderasyon loglarını görüntüle'),
+
+    new SlashCommandBuilder()
         .setName('takip')
         .setDescription('Oyuncu takip sistemi')
         .addSubcommand(sub =>

@@ -14,6 +14,7 @@ import * as banlisteCommand from '../commands/banliste.js';
 import * as profilCommand from '../commands/profil.js';
 import * as takipCommand from '../commands/takip.js';
 import * as karsilastirCommand from '../commands/karsilastir.js';
+import * as sunuculogCommand from '../commands/sunuculog.js';
 
 import handleAktiflikButton from '../buttons/aktiflik.js';
 import handleIngameButton from '../buttons/ingame.js';
@@ -37,14 +38,15 @@ const commandMap = {
     'banliste': banlisteCommand,
     'profil': profilCommand,
     'takip': takipCommand,
-    'karşılaştır': karsilastirCommand
+    'karşılaştır': karsilastirCommand,
+    'sunuculog': sunuculogCommand
 };
 
 // Gelen tüm etkileşimleri yönetir
 export default async function(interaction, client) {
     try {
         if (interaction.isChatInputCommand()) {
-            if (interaction.commandName !== 'komutlar' && interaction.commandName !== 'aktifoyuncular' && interaction.commandName !== 'id' && interaction.commandName !== 'tag' && interaction.commandName !== 'bansorgu' && interaction.commandName !== 'banliste' && interaction.commandName !== 'profil' && interaction.commandName !== 'takip' && interaction.commandName !== 'karşılaştır') {
+            if (interaction.commandName !== 'komutlar' && interaction.commandName !== 'aktifoyuncular' && interaction.commandName !== 'id' && interaction.commandName !== 'tag' && interaction.commandName !== 'bansorgu' && interaction.commandName !== 'banliste' && interaction.commandName !== 'profil' && interaction.commandName !== 'takip' && interaction.commandName !== 'karşılaştır' && interaction.commandName !== 'sunuculog') {
                 const allowedRoles = Array.isArray(config.allowedRoles) ? config.allowedRoles : [];
                 const hasPermission = interaction.member?.roles.cache.some(
                     role => allowedRoles.includes(role.id)
