@@ -96,17 +96,19 @@ const commands = [
 
     new SlashCommandBuilder()
         .setName('bansorgu')
-        .setDescription('Ban sorgulama ve listeleme')
-        .addSubcommand(sub =>
-            sub.setName('sorgu')
-                .setDescription('Bir kullanıcının ban durumunu sorgula')
-                .addUserOption(opt =>
-                    opt.setName('kullanici').setDescription('Kullanıcı etiketle').setRequired(false))
-                .addStringOption(opt =>
-                    opt.setName('id').setDescription('Discord ID gir').setRequired(false)))
-        .addSubcommand(sub =>
-            sub.setName('liste')
-                .setDescription('Tüm banlı kullanıcıları listele'))
+        .setDescription('Bir kullanıcının ban durumunu sorgula')
+        .addUserOption(option =>
+            option.setName('kullanici')
+                .setDescription('Ban sorgulanacak kullanıcı (etiket)')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('id')
+                .setDescription('Ban sorgulanacak kullanıcı ID')
+                .setRequired(false)),
+
+    new SlashCommandBuilder()
+        .setName('banliste')
+        .setDescription('Tüm banlı kullanıcıları listele'),
 ];
 
 const rest = new REST({ version: '10' }).setToken(config.token);

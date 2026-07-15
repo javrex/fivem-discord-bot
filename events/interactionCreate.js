@@ -10,6 +10,7 @@ import * as aktifoyuncularCommand from '../commands/aktifoyuncular.js';
 import * as idCommand from '../commands/id.js';
 import * as tagCommand from '../commands/tag.js';
 import * as bansorguCommand from '../commands/bansorgu.js';
+import * as banlisteCommand from '../commands/banliste.js';
 
 import handleAktiflikButton from '../buttons/aktiflik.js';
 import handleIngameButton from '../buttons/ingame.js';
@@ -29,14 +30,15 @@ const commandMap = {
     'aktifoyuncular': aktifoyuncularCommand,
     'id': idCommand,
     'tag': tagCommand,
-    'bansorgu': bansorguCommand
+    'bansorgu': bansorguCommand,
+    'banliste': banlisteCommand
 };
 
 // Gelen tüm etkileşimleri yönetir
 export default async function(interaction, client) {
     try {
         if (interaction.isChatInputCommand()) {
-            if (interaction.commandName !== 'komutlar' && interaction.commandName !== 'aktifoyuncular' && interaction.commandName !== 'id' && interaction.commandName !== 'tag' && interaction.commandName !== 'bansorgu') {
+            if (interaction.commandName !== 'komutlar' && interaction.commandName !== 'aktifoyuncular' && interaction.commandName !== 'id' && interaction.commandName !== 'tag' && interaction.commandName !== 'bansorgu' && interaction.commandName !== 'banliste') {
                 const allowedRoles = Array.isArray(config.allowedRoles) ? config.allowedRoles : [];
                 const hasPermission = interaction.member?.roles.cache.some(
                     role => allowedRoles.includes(role.id)
