@@ -9,6 +9,7 @@ import * as mesajCommand from '../commands/mesaj.js';
 import * as aktifoyuncularCommand from '../commands/aktifoyuncular.js';
 import * as idCommand from '../commands/id.js';
 import * as tagCommand from '../commands/tag.js';
+import * as bansorguCommand from '../commands/bansorgu.js';
 
 import handleAktiflikButton from '../buttons/aktiflik.js';
 import handleIngameButton from '../buttons/ingame.js';
@@ -27,14 +28,15 @@ const commandMap = {
     'mesaj': mesajCommand,
     'aktifoyuncular': aktifoyuncularCommand,
     'id': idCommand,
-    'tag': tagCommand
+    'tag': tagCommand,
+    'bansorgu': bansorguCommand
 };
 
 // Gelen tüm etkileşimleri yönetir
 export default async function(interaction, client) {
     try {
         if (interaction.isChatInputCommand()) {
-            if (interaction.commandName !== 'komutlar' && interaction.commandName !== 'aktifoyuncular' && interaction.commandName !== 'id' && interaction.commandName !== 'tag') {
+            if (interaction.commandName !== 'komutlar' && interaction.commandName !== 'aktifoyuncular' && interaction.commandName !== 'id' && interaction.commandName !== 'tag' && interaction.commandName !== 'bansorgu') {
                 const allowedRoles = Array.isArray(config.allowedRoles) ? config.allowedRoles : [];
                 const hasPermission = interaction.member?.roles.cache.some(
                     role => allowedRoles.includes(role.id)

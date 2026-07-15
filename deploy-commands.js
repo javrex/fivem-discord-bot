@@ -92,7 +92,19 @@ const commands = [
         .addStringOption(option =>
             option.setName('isim')
                 .setDescription('Aratılacak isim/etiket')
-                .setRequired(true))
+                .setRequired(true)),
+
+    new SlashCommandBuilder()
+        .setName('bansorgu')
+        .setDescription('Discord sunucusundaki ban sorgusunu yapar')
+        .addUserOption(option =>
+            option.setName('kullanici')
+                .setDescription('Ban sorgulanacak kullanıcı (etiket)')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('id')
+                .setDescription('Ban sorgulanacak kullanıcı ID')
+                .setRequired(false))
 ];
 
 const rest = new REST({ version: '10' }).setToken(config.token);
