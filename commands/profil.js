@@ -50,14 +50,14 @@ function getActivity(presence) {
 }
 
 export async function execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     try {
+        await interaction.deferReply({ ephemeral: true });
+
         const targetUser = interaction.options.getUser('kullanici') || interaction.user;
         const targetMember = interaction.guild.members.cache.get(targetUser.id)
             || await interaction.guild.members.fetch(targetUser.id).catch(() => null);
 
-        const user = targetUser;
+        const user = await targetUser.fetch(true);
         const member = targetMember;
 
         const displayName = member?.displayName || user.globalName || user.username;
@@ -138,7 +138,16 @@ export async function execute(interaction) {
 
         await interaction.editReply({ embeds: [embed], components: [row] });
     } catch (error) {
-        await interaction.editReply({ content: `Bir hata oluştu: ${error.message}` }).catch(() => {});
+        const msg = `Bir hata oluştu: ${error.message}`;
+        try {
+            await interaction.editReply({ content: msg });
+        } catch {
+            try {
+                await interaction.reply({ content: msg, ephemeral: true });
+            } catch {
+                // nothing we can do
+            }
+        }
     }
 }
 
