@@ -109,6 +109,14 @@ const commands = [
     new SlashCommandBuilder()
         .setName('banliste')
         .setDescription('Tüm banlı kullanıcıları listele'),
+
+    new SlashCommandBuilder()
+        .setName('profil')
+        .setDescription('Discord profilinizi veya başka bir kullanıcının profilini gösterir')
+        .addUserOption(option =>
+            option.setName('kullanici')
+                .setDescription('Profilini görmek istediğiniz kullanıcı')
+                .setRequired(false)),
 ];
 
 const rest = new REST({ version: '10' }).setToken(config.token);
