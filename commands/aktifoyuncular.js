@@ -287,8 +287,12 @@ export async function execute(interaction) {
         for (const s of settled) {
             if (s.status === 'fulfilled' && s.value && s.value.data) {
                 results.set(s.value.key, s.value.data);
+            } else {
+                const rejectedKey = s.status === 'fulfilled' ? (s.value ? s.value.key : 'unknown') : 'rejected';
+                console.log('[AKTIF-DEBUG] initial | no data for:', rejectedKey, '| status:', s.status);
             }
         }
+        console.log('[AKTIF-DEBUG] initial | results populated:', results.size, 'keys:', [...results.keys()].join(','));
 
         const embed = buildOverviewEmbed(results);
 
@@ -317,114 +321,135 @@ export async function execute(interaction) {
         const collector = reply.createMessageComponentCollector({ filter, time: 120000 });
 
         collector.on('collect', async (i) => {
-            if (i.isStringSelectMenu() && i.customId === 'server_select') {
-                const selectedKey = i.values[0];
-                let data = results.get(selectedKey);
+            try {
+                if (i.isStringSelectMenu() && i.customId === 'server_select') {
+                    const selectedKey = i.values[0];
+                    console.log('[AKTIF-DEBUG] server_select | selectedKey:', selectedKey, '| results.has:', results.has(selectedKey), '| results.size:', results.size, '| results keys:', [...results.keys()].join(','), '| cache has:', serverCache.has(selectedKey));
 
-                if (!data) {
-                    data = await fetchServerData(selectedKey);
-                    if (data) results.set(selectedKey, data);
-                }
+                    let data = results.get(selectedKey);
 
-                if (!data) {
-                    await i.update({ content: `${SERVER_DISPLAY[selectedKey] || selectedKey} sunucusuna erişilemedi.`, embeds: [], components: [] });
+                    if (!data) {
+                        console.log('[AKTIF-DEBUG] server_select | data null from results, trying fetchServerData');
+                        data = await fetchServerData(selectedKey);
+                        console.log('[AKTIF-DEBUG] server_select | fetchServerData returned:', data ? 'data found' : 'null');
+                        if (data) results.set(selectedKey, data);
+                    } else {
+                        console.log('[AKTIF-DEBUG] server_select | data found in results, players:', Array.isArray(data.players) ? data.players.length : 'NOT_ARRAY');
+                    }
+
+                    if (!data) {
+                        console.log('[AKTIF-DEBUG] server_select | ERISILEMEDI for:', selectedKey);
+                        await i.update({ content: `${SERVER_DISPLAY[selectedKey] || selectedKey} sunucusuna erişilemedi.`, embeds: [], components: [] });
+                        return;
+                    }
+
+                    const displayName = SERVER_DISPLAY[selectedKey] || selectedKey;
+                    const detailEmbed = buildServerDetailEmbed(displayName, data, selectedKey);
+                    const players = Array.isArray(data.players) ? data.players : [];
+                    console.log('[AKTIF-DEBUG] server_select | building detail, players:', players.length);
+                    const [selectRow, navRow] = buildDetailComponents(selectedKey, players, 0);
+
+                    const comps = [];
+                    if (selectRow) comps.push(selectRow);
+                    comps.push(navRow);
+
+                    await i.update({ embeds: [detailEmbed], components: comps });
                     return;
                 }
 
-                const displayName = SERVER_DISPLAY[selectedKey] || selectedKey;
-                const detailEmbed = buildServerDetailEmbed(displayName, data, selectedKey);
-                const players = Array.isArray(data.players) ? data.players : [];
-                const [selectRow, navRow] = buildDetailComponents(selectedKey, players, 0);
-
-                const comps = [];
-                if (selectRow) comps.push(selectRow);
-                comps.push(navRow);
-
-                await i.update({ embeds: [detailEmbed], components: comps });
-                return;
-            }
-
-            if (i.customId === 'back') {
-                const overviewEmbed = buildOverviewEmbed(results);
-                const avail = ALL_SERVER_KEYS.filter(key => results.has(key));
-                const comps = avail.length > 0
-                    ? [
-                        new ActionRowBuilder().addComponents(
-                            new StringSelectMenuBuilder()
-                                .setCustomId('server_select')
-                                .setPlaceholder('🔍 Detay için sunucu seçin')
-                                .addOptions(
-                                    avail.map(key => ({
-                                        label: `${SERVER_DISPLAY[key] || key} (${results.get(key).players.length} oyuncu)`,
-                                        value: key,
-                                        description: `👥 ${results.get(key).players.length}/${results.get(key).maxClients || '?'}`
-                                    }))
-                                )
-                        )
-                    ]
-                    : [];
-                await i.update({ embeds: [overviewEmbed], components: comps });
-                return;
-            }
-
-            if (i.isStringSelectMenu()) {
-                const selectedValue = i.values[0];
-                const key = i.customId.split('~')[1];
-                const data = results.get(key);
-                if (!data) {
-                    await i.reply({ content: 'Sunucu verisi bulunamadı.', ephemeral: true });
+                if (i.customId === 'back') {
+                    console.log('[AKTIF-DEBUG] back | results.size:', results.size, '| keys:', [...results.keys()].join(','));
+                    const overviewEmbed = buildOverviewEmbed(results);
+                    const avail = ALL_SERVER_KEYS.filter(key => results.has(key));
+                    const comps = avail.length > 0
+                        ? [
+                            new ActionRowBuilder().addComponents(
+                                new StringSelectMenuBuilder()
+                                    .setCustomId('server_select')
+                                    .setPlaceholder('🔍 Detay için sunucu seçin')
+                                    .addOptions(
+                                        avail.map(key => ({
+                                            label: `${SERVER_DISPLAY[key] || key} (${results.get(key).players.length} oyuncu)`,
+                                            value: key,
+                                            description: `👥 ${results.get(key).players.length}/${results.get(key).maxClients || '?'}`
+                                        }))
+                                    )
+                            )
+                        ]
+                        : [];
+                    await i.update({ embeds: [overviewEmbed], components: comps });
                     return;
                 }
-                const players = Array.isArray(data.players) ? data.players : [];
-                const player = players.find(p => String(p.id) === selectedValue);
-                if (player) {
-                    const detailEmbed = buildPlayerDetailEmbed(SERVER_DISPLAY[key] || key, player);
-                    await i.reply({ embeds: [detailEmbed], ephemeral: true });
-                } else {
-                    await i.reply({ content: 'Oyuncu bulunamadı.', ephemeral: true });
+
+                if (i.isStringSelectMenu()) {
+                    const selectedValue = i.values[0];
+                    const key = i.customId.split('~')[1];
+                    console.log('[AKTIF-DEBUG] player_select | customId:', i.customId, '| key:', key, '| selectedValue:', selectedValue, '| results.has:', results.has(key));
+                    const data = results.get(key);
+                    if (!data) {
+                        console.log('[AKTIF-DEBUG] player_select | data not found for key:', key);
+                        await i.reply({ content: 'Sunucu verisi bulunamadı.', ephemeral: true });
+                        return;
+                    }
+                    const players = Array.isArray(data.players) ? data.players : [];
+                    const player = players.find(p => String(p.id) === selectedValue);
+                    if (player) {
+                        const detailEmbed = buildPlayerDetailEmbed(SERVER_DISPLAY[key] || key, player);
+                        await i.reply({ embeds: [detailEmbed], ephemeral: true });
+                    } else {
+                        console.log('[AKTIF-DEBUG] player_select | player not found, id:', selectedValue, '| total players:', players.length);
+                        await i.reply({ content: 'Oyuncu bulunamadı.', ephemeral: true });
+                    }
+                    return;
                 }
-                return;
-            }
 
-            const [action, key, pageStr] = i.customId.split('~');
-            let newPage = parseInt(pageStr) || 0;
-            let players;
+                const [action, key, pageStr] = i.customId.split('~');
+                let newPage = parseInt(pageStr) || 0;
+                let players;
 
-            if (action === 'refresh') {
-                const fresh = await fetchServerData(key);
-                if (fresh) {
-                    results.set(key, fresh);
-                    players = Array.isArray(fresh.players) ? fresh.players : [];
+                console.log('[AKTIF-DEBUG] button | action:', action, '| key:', key, '| page:', pageStr, '| results.has:', results.has(key));
+
+                if (action === 'refresh') {
+                    const fresh = await fetchServerData(key);
+                    if (fresh) {
+                        results.set(key, fresh);
+                        players = Array.isArray(fresh.players) ? fresh.players : [];
+                    } else {
+                        players = null;
+                    }
                 } else {
-                    players = null;
+                    const data = results.get(key);
+                    players = data ? (Array.isArray(data.players) ? data.players : []) : null;
                 }
-            } else {
-                const data = results.get(key);
-                players = data ? (Array.isArray(data.players) ? data.players : []) : null;
+
+                if (!players || players.length === 0) {
+                    console.log('[AKTIF-DEBUG] button | no players for:', key);
+                    await i.update({ content: 'Oyuncu verisi alınamadı.', embeds: [], components: [] });
+                    return;
+                }
+
+                if (action === 'prev') newPage = Math.max(0, newPage - 1);
+                else if (action === 'next') newPage = Math.min(newPage + 1, Math.ceil(players.length / 25) - 1);
+
+                const data = results.get(key) || { players, maxClients: '?', hostname: '' };
+                const displayName = SERVER_DISPLAY[key] || key;
+                const detailEmbed = buildServerDetailEmbed(displayName, data, key);
+                const [newSelectRow, newNavRow] = buildDetailComponents(key, players, newPage);
+                const newComps = [];
+                if (newSelectRow) newComps.push(newSelectRow);
+                newComps.push(newNavRow);
+                await i.update({ embeds: [detailEmbed], components: newComps });
+            } catch (error) {
+                console.error('[AKTIF-DEBUG] handler error:', error.message, '\nStack:', error.stack);
+                await i.reply({ content: `Hata: ${error.message}`, ephemeral: true }).catch(() => {});
             }
-
-            if (!players || players.length === 0) {
-                await i.update({ content: 'Oyuncu verisi alınamadı.', embeds: [], components: [] });
-                return;
-            }
-
-            if (action === 'prev') newPage = Math.max(0, newPage - 1);
-            else if (action === 'next') newPage = Math.min(newPage + 1, Math.ceil(players.length / 25) - 1);
-
-            const data = results.get(key) || { players, maxClients: '?', hostname: '' };
-            const displayName = SERVER_DISPLAY[key] || key;
-            const detailEmbed = buildServerDetailEmbed(displayName, data, key);
-            const [newSelectRow, newNavRow] = buildDetailComponents(key, players, newPage);
-            const newComps = [];
-            if (newSelectRow) newComps.push(newSelectRow);
-            newComps.push(newNavRow);
-            await i.update({ embeds: [detailEmbed], components: newComps });
         });
 
         collector.on('end', () => {
             interaction.editReply({ components: [] }).catch(() => {});
         });
     } catch (error) {
+        console.error('[AKTIF-DEBUG] execute error:', error.message, '\nStack:', error.stack);
         await interaction.editReply({ content: `Hata: ${error.message}` }).catch(() => {});
     }
 }
