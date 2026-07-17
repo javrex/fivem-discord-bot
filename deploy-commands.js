@@ -61,7 +61,13 @@ const commands = [
                     { name: 'MD Rp', value: 'md_rp' },
                     { name: 'MD PvP', value: 'md_pvp' },
                     { name: 'PWUC Rp', value: 'pwuc_rp' },
-                    { name: 'Ria RP', value: 'ria_rp' }
+                    { name: 'Ria RP', value: 'ria_rp' },
+                    { name: 'Letra XI', value: 'letra_xi' },
+                    { name: 'Fave Arena', value: 'fave_arena' },
+                    { name: 'Xen RP', value: 'xen_rp' },
+                    { name: 'Night V', value: 'night_v' },
+                    { name: 'Boz RP', value: 'boz_rp' },
+                    { name: 'Daddy PVP', value: 'daddy_pvp' }
                 )
                 .setRequired(true)),
 
@@ -78,7 +84,13 @@ const commands = [
                     { name: 'MD Rp', value: 'md_rp' },
                     { name: 'MD PvP', value: 'md_pvp' },
                     { name: 'PWUC Rp', value: 'pwuc_rp' },
-                    { name: 'Ria RP', value: 'ria_rp' }
+                    { name: 'Ria RP', value: 'ria_rp' },
+                    { name: 'Letra XI', value: 'letra_xi' },
+                    { name: 'Fave Arena', value: 'fave_arena' },
+                    { name: 'Xen RP', value: 'xen_rp' },
+                    { name: 'Night V', value: 'night_v' },
+                    { name: 'Boz RP', value: 'boz_rp' },
+                    { name: 'Daddy PVP', value: 'daddy_pvp' }
                 )
                 .setRequired(true))
         .addIntegerOption(option =>
@@ -131,7 +143,13 @@ const commands = [
                     { name: 'MD Rp', value: 'md_rp' },
                     { name: 'MD PvP', value: 'md_pvp' },
                     { name: 'PWUC Rp', value: 'pwuc_rp' },
-                    { name: 'Ria RP', value: 'ria_rp' }
+                    { name: 'Ria RP', value: 'ria_rp' },
+                    { name: 'Letra XI', value: 'letra_xi' },
+                    { name: 'Fave Arena', value: 'fave_arena' },
+                    { name: 'Xen RP', value: 'xen_rp' },
+                    { name: 'Night V', value: 'night_v' },
+                    { name: 'Boz RP', value: 'boz_rp' },
+                    { name: 'Daddy PVP', value: 'daddy_pvp' }
                 )
                 .setRequired(true))
         .addStringOption(option =>
@@ -144,7 +162,13 @@ const commands = [
                     { name: 'MD Rp', value: 'md_rp' },
                     { name: 'MD PvP', value: 'md_pvp' },
                     { name: 'PWUC Rp', value: 'pwuc_rp' },
-                    { name: 'Ria RP', value: 'ria_rp' }
+                    { name: 'Ria RP', value: 'ria_rp' },
+                    { name: 'Letra XI', value: 'letra_xi' },
+                    { name: 'Fave Arena', value: 'fave_arena' },
+                    { name: 'Xen RP', value: 'xen_rp' },
+                    { name: 'Night V', value: 'night_v' },
+                    { name: 'Boz RP', value: 'boz_rp' },
+                    { name: 'Daddy PVP', value: 'daddy_pvp' }
                 )
                 .setRequired(true)),
 
