@@ -78,25 +78,52 @@ async function queryServer(host, port) {
 
 async function queryCfxAPI(joinCode) {
     try {
-        const res = await fetch(`https://frontend.cfx-services.net/api/servers/single/${joinCode}`, {
+        const url = `https://frontend.cfx-services.net/api/servers/single/${joinCode}`;
+        console.log(`[CFX-DEBUG] Fetching: ${url}`);
+        const res = await fetch(url, {
             signal: AbortSignal.timeout(3000),
             headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
         });
-        if (!res.ok) return null;
-        const data = await res.json();
-        if (!data.Data) return null;
-        const players = (data.Data.players || []).map(p => ({
-            id: typeof p.id === 'number' ? p.id : 0,
-            name: p.name || 'İsimsiz',
-            ping: p.ping || 0
-        }));
-        return {
-            hostname: data.Data.hostname || joinCode,
-            clients: data.Data.clients || players.length,
-            maxClients: data.Data.svMaxclients || data.Data.sv_maxclients || '?',
-            players
-        };
-    } catch {
+        console.log(`[CFX-DEBUG] ${joinCode} | status: ${res.status} | ok: ${res.ok} | contentType: ${res.headers.get('content-type')}`);
+        if (!res.ok) {
+            console.log(`[CFX-DEBUG] ${joinCode} | not ok, returning null`);
+            return null;
+        }
+        const text = await res.text();
+        console.log(`[CFX-DEBUG] ${joinCode} | response length: ${text.length} | first 200: ${text.substring(0, 200)}`);
+        let data;
+        try { data = JSON.parse(text); } catch (e) {
+            console.log(`[CFX-DEBUG] ${joinCode} | JSON parse error: ${e.message}`);
+            return null;
+        }
+        if (!data.Data) {
+            console.log(`[CFX-DEBUG] ${joinCode} | data.Data is null/undefined`);
+            return null;
+        }
+        const rawPlayers = data.Data.players;
+        console.log(`[CFX-DEBUG] ${joinCode} | players type: ${typeof rawPlayers} | isArray: ${Array.isArray(rawPlayers)} | length: ${rawPlayers ? rawPlayers.length : 'N/A'}`);
+        if (rawPlayers && rawPlayers.length > 0) {
+            console.log(`[CFX-DEBUG] ${joinCode} | first player sample:`, JSON.stringify(rawPlayers[0]).substring(0, 200));
+        }
+        const players = (rawPlayers || []).map(p => {
+            try {
+                return {
+                    id: typeof p.id === 'number' ? p.id : 0,
+                    name: p.name || 'İsimsiz',
+                    ping: p.ping || 0
+                };
+            } catch (mapErr) {
+                console.log(`[CFX-DEBUG] ${joinCode} | map error for player:`, mapErr.message);
+                return { id: 0, name: 'İsimsiz', ping: 0 };
+            }
+        });
+        const maxClients = data.Data.svMaxclients || data.Data.sv_maxclients || '?';
+        const hostname = data.Data.hostname || joinCode;
+        console.log(`[CFX-DEBUG] ${joinCode} | success: ${players.length} players, maxClients: ${maxClients}, hostname: ${hostname}`);
+        return { hostname, clients: data.Data.clients || players.length, maxClients, players };
+    } catch (err) {
+        console.log(`[CFX-DEBUG] ${joinCode} | CAUGHT ERROR: ${err.message}`);
+        console.log(`[CFX-DEBUG] ${joinCode} | STACK: ${err.stack}`);
         return null;
     }
 }
@@ -213,13 +240,16 @@ export async function execute(interaction) {
         const cfxCode = CFX_SERVERS[serverChoice];
         const { host, port } = parseAddress(address);
 
+        console.log(`[CFX-DEBUG] execute | serverChoice: ${serverChoice} | address: ${address} | cfxCode: ${cfxCode || 'NONE'} | host: ${host} | port: ${port}`);
         const result = cfxCode
             ? await queryCfxAPI(cfxCode)
             : await queryServer(host, port);
 
         if (!result) {
+            console.log(`[CFX-DEBUG] execute | ${serverChoice} | result is null/undefined, showing erisilemedi`);
             return interaction.editReply({ content: `${displayName} sunucusuna erişilemedi.` });
         }
+        console.log(`[CFX-DEBUG] execute | ${serverChoice} | result OK | players: ${Array.isArray(result.players) ? result.players.length : 'NOT_ARRAY'} | maxClients: ${result.maxClients} | hostname: ${result.hostname}`);
 
         const state = { result, players: Array.isArray(result.players) ? result.players : [] };
         const embed = buildServerEmbed(displayName, state.result, serverChoice);
