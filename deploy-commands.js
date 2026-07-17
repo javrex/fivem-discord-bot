@@ -57,7 +57,6 @@ const commands = [
                 .addChoices(
                     { name: 'Well', value: 'well' },
                     { name: 'Alesta Rp', value: 'alesta_rp' },
-                    { name: 'Guid Pvp', value: 'guid_pvp' },
                     { name: 'MD Rp', value: 'md_rp' },
                     { name: 'MD PvP', value: 'md_pvp' },
                     { name: 'PWUC Rp', value: 'pwuc_rp' },
@@ -80,7 +79,6 @@ const commands = [
                 .addChoices(
                     { name: 'Well', value: 'well' },
                     { name: 'Alesta Rp', value: 'alesta_rp' },
-                    { name: 'Guid Pvp', value: 'guid_pvp' },
                     { name: 'MD Rp', value: 'md_rp' },
                     { name: 'MD PvP', value: 'md_pvp' },
                     { name: 'PWUC Rp', value: 'pwuc_rp' },
@@ -139,7 +137,6 @@ const commands = [
                 .addChoices(
                     { name: 'Well', value: 'well' },
                     { name: 'Alesta Rp', value: 'alesta_rp' },
-                    { name: 'Guid Pvp', value: 'guid_pvp' },
                     { name: 'MD Rp', value: 'md_rp' },
                     { name: 'MD PvP', value: 'md_pvp' },
                     { name: 'PWUC Rp', value: 'pwuc_rp' },
@@ -158,7 +155,6 @@ const commands = [
                 .addChoices(
                     { name: 'Well', value: 'well' },
                     { name: 'Alesta Rp', value: 'alesta_rp' },
-                    { name: 'Guid Pvp', value: 'guid_pvp' },
                     { name: 'MD Rp', value: 'md_rp' },
                     { name: 'MD PvP', value: 'md_pvp' },
                     { name: 'PWUC Rp', value: 'pwuc_rp' },

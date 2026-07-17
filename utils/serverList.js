@@ -1,7 +1,6 @@
 export const KNOWN_SERVERS = {
     'well': '5.231.120.202',
     'alesta_rp': 'alestarp.com',
-    'guid_pvp': '141.98.50.34',
     'md_rp': '185.29.166.7',
     'md_pvp': '46.203.182.30',
     'pwuc_rp': '46.203.182.73',
@@ -31,7 +30,6 @@ export const CFX_SERVERS = {
 export const SERVER_DISPLAY = {
     'well': 'Well',
     'alesta_rp': 'Alesta RP',
-    'guid_pvp': 'Guid PvP',
     'md_rp': 'MD RP',
     'md_pvp': 'MD PvP',
     'pwuc_rp': 'PWUC RP',
@@ -44,4 +42,4 @@ export const SERVER_DISPLAY = {
     'daddy_pvp': 'Daddy PVP'
 };
 
-export const ALL_SERVER_KEYS = ['well', 'alesta_rp', 'guid_pvp', 'md_rp', 'md_pvp', 'pwuc_rp', 'ria_rp', 'letra_xi', 'fave_arena', 'xen_rp', 'night_v', 'boz_rp', 'daddy_pvp'];
+export const ALL_SERVER_KEYS = ['well', 'alesta_rp', 'md_rp', 'md_pvp', 'pwuc_rp', 'ria_rp', 'letra_xi', 'fave_arena', 'xen_rp', 'night_v', 'boz_rp', 'daddy_pvp'];
