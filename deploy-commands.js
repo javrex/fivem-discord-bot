@@ -153,6 +153,14 @@ const commands = [
         .setDescription('Sunucu moderasyon loglarını görüntüle'),
 
     new SlashCommandBuilder()
+        .setName('gif')
+        .setDescription('PNG, JPG veya WEBP resmini gerçek GIF formatına dönüştürür')
+        .addAttachmentOption(option =>
+            option.setName('resim')
+                .setDescription('GIF\'e dönüştürülecek resim (PNG, JPG, JPEG, WEBP)')
+                .setRequired(true)),
+
+    new SlashCommandBuilder()
         .setName('takip')
         .setDescription('Oyuncu takip sistemi')
         .addSubcommand(sub =>
