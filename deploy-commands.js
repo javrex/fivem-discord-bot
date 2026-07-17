@@ -52,7 +52,7 @@ const commands = [
         .setName('aktifoyuncular')
         .setDescription('FiveM sunucusundaki aktif oyuncuları listeler')
         .addStringOption(option =>
-            option.setName('server')
+            option.setName('sunucu')
                 .setDescription('Sorgulanacak sunucu')
                 .addChoices(
                     { name: 'Well', value: 'well' },

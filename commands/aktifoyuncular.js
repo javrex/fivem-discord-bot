@@ -1,6 +1,6 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } from 'discord.js';
 import { GameDig } from 'gamedig';
-import { KNOWN_SERVERS, CFX_SERVERS, ALL_SERVER_KEYS, SERVER_DISPLAY } from '../utils/serverList.js';
+import { KNOWN_SERVERS, CFX_SERVERS, SERVER_DISPLAY } from '../utils/serverList.js';
 
 function parseAddress(value) {
     const parts = value.split(':');
@@ -50,23 +50,18 @@ async function queryHTTP(host, port) {
             fetch(`http://${host}:${port}/info.json`, { signal: controller.signal }).catch(() => null),
             fetch(`http://${host}:${port}/players.json`, { signal: controller.signal }).catch(() => null)
         ]);
-
         if ((!infoRes || !infoRes.ok) && (!playersRes || !playersRes.ok)) return null;
-
         let info = {};
         let players = [];
-
         if (infoRes && infoRes.ok) {
             try { info = await infoRes.json(); } catch {}
         }
         if (playersRes && playersRes.ok) {
             try { players = await playersRes.json(); } catch {}
         }
-
         const hostname = info.vars?.sv_hostname || info.vars?.sv_projectName || info.hostname || host;
         const clients = typeof info.clients === 'number' ? info.clients : (Array.isArray(players) ? players.length : 0);
         const maxClients = info.vars?.sv_maxClients || info.vars?.sv_maxclients || info.svMaxclients || '?';
-
         return { hostname, clients, maxClients, players: Array.isArray(players) ? players : [] };
     } catch {
         return null;
@@ -106,40 +101,6 @@ async function queryCfxAPI(joinCode) {
     }
 }
 
-const serverCache = new Map();
-const CACHE_TTL = 30000;
-
-async function fetchServerData(key) {
-    const cached = serverCache.get(key);
-    if (cached && Date.now() - cached.ts < CACHE_TTL) {
-        return cached.data;
-    }
-    if (cached) {
-        refreshInBackground(key);
-        return cached.data;
-    }
-    const cfxCode = CFX_SERVERS[key];
-    const address = KNOWN_SERVERS[key];
-    if (!address) return null;
-    const { host, port } = parseAddress(address);
-    const result = cfxCode ? await queryCfxAPI(cfxCode) : await queryServer(host, port);
-    if (result) {
-        serverCache.set(key, { data: result, ts: Date.now() });
-    }
-    return result;
-}
-
-async function refreshInBackground(key) {
-    const cfxCode = CFX_SERVERS[key];
-    const address = KNOWN_SERVERS[key];
-    if (!address) return;
-    const { host, port } = parseAddress(address);
-    const result = cfxCode ? await queryCfxAPI(cfxCode) : await queryServer(host, port);
-    if (result) {
-        serverCache.set(key, { data: result, ts: Date.now() });
-    }
-}
-
 function buildPlayerSelectOptions(players, page) {
     const start = page * 25;
     const pagePlayers = players.slice(start, start + 25);
@@ -150,7 +111,7 @@ function buildPlayerSelectOptions(players, page) {
     }));
 }
 
-function buildDetailComponents(serverKey, players, page) {
+function buildMainComponents(serverKey, players, page) {
     const totalPages = Math.ceil(players.length / 25) || 1;
     const hasPlayers = players.length > 0;
     const selectRow = hasPlayers ? new ActionRowBuilder().addComponents(
@@ -160,63 +121,28 @@ function buildDetailComponents(serverKey, players, page) {
             .addOptions(buildPlayerSelectOptions(players, page))
     ) : null;
     const navRow = new ActionRowBuilder().addComponents(
-        ...(hasPlayers ? [
-            new ButtonBuilder()
-                .setCustomId(`prev~${serverKey}~${page}`)
-                .setLabel('Önceki Sayfa')
-                .setStyle(ButtonStyle.Secondary)
-                .setEmoji('⬅')
-                .setDisabled(page === 0),
-            new ButtonBuilder()
-                .setCustomId(`next~${serverKey}~${page}`)
-                .setLabel('Sonraki Sayfa')
-                .setStyle(ButtonStyle.Secondary)
-                .setEmoji('➡')
-                .setDisabled(page >= totalPages - 1),
-            new ButtonBuilder()
-                .setCustomId(`refresh~${serverKey}~${page}`)
-                .setLabel('Yenile')
-                .setStyle(ButtonStyle.Primary)
-                .setEmoji('🔄')
-        ] : []),
         new ButtonBuilder()
-            .setCustomId('back')
-            .setLabel('Geri Dön')
+            .setCustomId(`prev~${serverKey}~${page}`)
+            .setLabel('Önceki Sayfa')
             .setStyle(ButtonStyle.Secondary)
-            .setEmoji('◀')
+            .setEmoji('⬅')
+            .setDisabled(page === 0 || !hasPlayers),
+        new ButtonBuilder()
+            .setCustomId(`next~${serverKey}~${page}`)
+            .setLabel('Sonraki Sayfa')
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji('➡')
+            .setDisabled(page >= totalPages - 1 || !hasPlayers),
+        new ButtonBuilder()
+            .setCustomId(`refresh~${serverKey}~${page}`)
+            .setLabel('Yenile')
+            .setStyle(ButtonStyle.Primary)
+            .setEmoji('🔄')
     );
     return [selectRow, navRow];
 }
 
-function buildOverviewEmbed(results) {
-    const lines = ALL_SERVER_KEYS.map(key => {
-        const displayName = SERVER_DISPLAY[key] || key;
-        const data = results.get(key);
-        if (!data) {
-            return `❌ **${displayName}** — Erişilemedi`;
-        }
-        const players = Array.isArray(data.players) ? data.players : [];
-        const maxClients = data.maxClients || '?';
-        const bar = makeBar(players.length, typeof maxClients === 'number' ? maxClients : 1);
-        return `${bar} **${displayName}** — 👥 ${players.length}/${maxClients}`;
-    });
-
-    return new EmbedBuilder()
-        .setColor(0x2b2d31)
-        .setTitle('🎮 Sunucu Durumları')
-        .setDescription([
-            `╔════════════════════╗`,
-            `     🎮 Aktif Oyuncular`,
-            `╚════════════════════╝`,
-            '',
-            ...lines,
-            '',
-            `────────────`,
-            `🔄 Son güncelleme: <t:${Math.floor(Date.now() / 1000)}:R>`
-        ].join('\n'));
-}
-
-function buildServerDetailEmbed(displayName, data, key) {
+function buildServerEmbed(displayName, data, key) {
     const players = Array.isArray(data.players) ? data.players : [];
     const playerCount = players.length;
     const maxVal = typeof data.maxClients === 'number' ? data.maxClients : parseInt(data.maxClients) || 0;
@@ -276,40 +202,32 @@ export async function execute(interaction) {
     await interaction.deferReply();
 
     try {
-        const settled = await Promise.allSettled(
-            ALL_SERVER_KEYS.map(async key => {
-                const data = await fetchServerData(key);
-                return { key, data };
-            })
-        );
+        const serverChoice = interaction.options.getString('sunucu') || interaction.options.getString('server');
+        const address = KNOWN_SERVERS[serverChoice];
 
-        const results = new Map();
-        for (const s of settled) {
-            if (s.status === 'fulfilled' && s.value && s.value.data) {
-                results.set(s.value.key, s.value.data);
-            }
+        if (!address) {
+            return interaction.editReply({ content: 'Sunucu bulunamadı.' });
         }
 
-        const embed = buildOverviewEmbed(results);
+        const displayName = SERVER_DISPLAY[serverChoice] || serverChoice;
+        const cfxCode = CFX_SERVERS[serverChoice];
+        const { host, port } = parseAddress(address);
 
-        const availableServers = ALL_SERVER_KEYS.filter(key => results.has(key));
+        const result = cfxCode
+            ? await queryCfxAPI(cfxCode)
+            : await queryServer(host, port);
+
+        if (!result) {
+            return interaction.editReply({ content: `${displayName} sunucusuna erişilemedi.` });
+        }
+
+        const state = { result, players: Array.isArray(result.players) ? result.players : [] };
+        const embed = buildServerEmbed(displayName, state.result, serverChoice);
+        const [selectRow, navRow] = buildMainComponents(serverChoice, state.players, 0);
+
         const components = [];
-        if (availableServers.length > 0) {
-            components.push(
-                new ActionRowBuilder().addComponents(
-                    new StringSelectMenuBuilder()
-                        .setCustomId('server_select')
-                        .setPlaceholder('🔍 Detay için sunucu seçin')
-                        .addOptions(
-                            availableServers.map(key => ({
-                                label: `${SERVER_DISPLAY[key] || key} (${results.get(key).players.length} oyuncu)`,
-                                value: key,
-                                description: `👥 ${results.get(key).players.length}/${results.get(key).maxClients || '?'}`
-                            }))
-                        )
-                )
-            );
-        }
+        if (selectRow) components.push(selectRow);
+        components.push(navRow);
 
         const reply = await interaction.editReply({ embeds: [embed], components });
 
@@ -317,68 +235,11 @@ export async function execute(interaction) {
         const collector = reply.createMessageComponentCollector({ filter, time: 120000 });
 
         collector.on('collect', async (i) => {
-            if (i.isStringSelectMenu() && i.customId === 'server_select') {
-                const selectedKey = i.values[0];
-                let data = results.get(selectedKey);
-
-                if (!data) {
-                    data = await fetchServerData(selectedKey);
-                    if (data) results.set(selectedKey, data);
-                }
-
-                if (!data) {
-                    await i.update({ content: `${SERVER_DISPLAY[selectedKey] || selectedKey} sunucusuna erişilemedi.`, embeds: [], components: [] });
-                    return;
-                }
-
-                const displayName = SERVER_DISPLAY[selectedKey] || selectedKey;
-                const detailEmbed = buildServerDetailEmbed(displayName, data, selectedKey);
-                const players = Array.isArray(data.players) ? data.players : [];
-                const [selectRow, navRow] = buildDetailComponents(selectedKey, players, 0);
-
-                const comps = [];
-                if (selectRow) comps.push(selectRow);
-                comps.push(navRow);
-
-                await i.update({ embeds: [detailEmbed], components: comps });
-                return;
-            }
-
-            if (i.customId === 'back') {
-                const overviewEmbed = buildOverviewEmbed(results);
-                const avail = ALL_SERVER_KEYS.filter(key => results.has(key));
-                const comps = avail.length > 0
-                    ? [
-                        new ActionRowBuilder().addComponents(
-                            new StringSelectMenuBuilder()
-                                .setCustomId('server_select')
-                                .setPlaceholder('🔍 Detay için sunucu seçin')
-                                .addOptions(
-                                    avail.map(key => ({
-                                        label: `${SERVER_DISPLAY[key] || key} (${results.get(key).players.length} oyuncu)`,
-                                        value: key,
-                                        description: `👥 ${results.get(key).players.length}/${results.get(key).maxClients || '?'}`
-                                    }))
-                                )
-                        )
-                    ]
-                    : [];
-                await i.update({ embeds: [overviewEmbed], components: comps });
-                return;
-            }
-
             if (i.isStringSelectMenu()) {
                 const selectedValue = i.values[0];
-                const key = i.customId.split('~')[1];
-                const data = results.get(key);
-                if (!data) {
-                    await i.reply({ content: 'Sunucu verisi bulunamadı.', ephemeral: true });
-                    return;
-                }
-                const players = Array.isArray(data.players) ? data.players : [];
-                const player = players.find(p => String(p.id) === selectedValue);
+                const player = state.players.find(p => String(p.id) === selectedValue);
                 if (player) {
-                    const detailEmbed = buildPlayerDetailEmbed(SERVER_DISPLAY[key] || key, player);
+                    const detailEmbed = buildPlayerDetailEmbed(displayName, player);
                     await i.reply({ embeds: [detailEmbed], ephemeral: true });
                 } else {
                     await i.reply({ content: 'Oyuncu bulunamadı.', ephemeral: true });
@@ -388,33 +249,24 @@ export async function execute(interaction) {
 
             const [action, key, pageStr] = i.customId.split('~');
             let newPage = parseInt(pageStr) || 0;
-            let players;
 
             if (action === 'refresh') {
-                const fresh = await fetchServerData(key);
-                if (fresh) {
-                    results.set(key, fresh);
-                    players = Array.isArray(fresh.players) ? fresh.players : [];
-                } else {
-                    players = null;
+                const fresh = cfxCode
+                    ? await queryCfxAPI(cfxCode)
+                    : await queryServer(host, port);
+                if (!fresh || !Array.isArray(fresh.players) || fresh.players.length === 0) {
+                    await i.update({ content: 'Oyuncu verisi alınamadı.', embeds: [], components: [] });
+                    return;
                 }
+                state.result = fresh;
+                state.players = fresh.players;
             } else {
-                const data = results.get(key);
-                players = data ? (Array.isArray(data.players) ? data.players : []) : null;
+                if (action === 'prev') newPage = Math.max(0, newPage - 1);
+                else if (action === 'next') newPage = Math.min(newPage + 1, Math.ceil(state.players.length / 25) - 1);
             }
 
-            if (!players || players.length === 0) {
-                await i.update({ content: 'Oyuncu verisi alınamadı.', embeds: [], components: [] });
-                return;
-            }
-
-            if (action === 'prev') newPage = Math.max(0, newPage - 1);
-            else if (action === 'next') newPage = Math.min(newPage + 1, Math.ceil(players.length / 25) - 1);
-
-            const data = results.get(key) || { players, maxClients: '?', hostname: '' };
-            const displayName = SERVER_DISPLAY[key] || key;
-            const detailEmbed = buildServerDetailEmbed(displayName, data, key);
-            const [newSelectRow, newNavRow] = buildDetailComponents(key, players, newPage);
+            const detailEmbed = buildServerEmbed(displayName, state.result, key);
+            const [newSelectRow, newNavRow] = buildMainComponents(key, state.players, newPage);
             const newComps = [];
             if (newSelectRow) newComps.push(newSelectRow);
             newComps.push(newNavRow);
@@ -426,25 +278,5 @@ export async function execute(interaction) {
         });
     } catch (error) {
         await interaction.editReply({ content: `Hata: ${error.message}` }).catch(() => {});
-    }
-}
-
-async function refreshAllServers() {
-    const promises = ALL_SERVER_KEYS.map(key => refreshInBackground(key));
-    await Promise.allSettled(promises);
-}
-
-let backgroundInterval = null;
-
-export function startPlayerCache() {
-    if (backgroundInterval) return;
-    refreshAllServers();
-    backgroundInterval = setInterval(refreshAllServers, 60000);
-}
-
-export function stopPlayerCache() {
-    if (backgroundInterval) {
-        clearInterval(backgroundInterval);
-        backgroundInterval = null;
     }
 }
